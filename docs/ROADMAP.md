@@ -37,6 +37,8 @@ Business model: **Option A**, open-source GPL product. Revenue comes from suppor
 - [ ] C# add-in on the official Revit API: export clean IFC with BS BIM mapping
 - [ ] Import BS BIM IFC back as native Revit elements
 
+## Revit working style: see docs/REVIT_WORKFLOW.md (focus: structure + MEP, US + UK clients)
+
 ## M3: UI shell (weeks 5–18)
 - [ ] Revit-like ribbon/toolbar: Wall, Door, Window, Floor, Roof, Stair, Column, Beam
 - [ ] Project Browser (views, sheets, schedules), Properties panel, Type Selector
