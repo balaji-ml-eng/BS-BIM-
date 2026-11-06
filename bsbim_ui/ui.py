@@ -12,6 +12,11 @@ class BSBIM_PT_main(bpy.types.Panel):
     bl_region_type = "UI"
     bl_category = "BS BIM"
 
+    @classmethod
+    def poll(cls, context):  # in the Revit-style screen these commands live in the ribbon and File menu
+        from .revit_ui import revit_mode
+        return not revit_mode(context)
+
     def draw(self, context):
         layout = self.layout
         if not operators.bonsai_ready():

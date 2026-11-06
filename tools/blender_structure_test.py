@@ -93,6 +93,35 @@ try:
     except ValueError:
         check("zero-length beam refused", True)
 
+    # Level (LL) and Grid (GR) commands
+    tools = import_module(key + ".tools")
+    l3 = tools.add_level("Level 3", 20 * FT)
+    check("Level 3 added", near(structure.level_z(l3), 20 * FT) and near(l3.Elevation, 20.0),
+          (round(structure.level_z(l3), 4), l3.Elevation))
+    check("Level 3 in the building", E.get_aggregate(l3) == f.by_type("IfcBuilding")[0])
+    try:
+        tools.add_level("Level 3", 30 * FT)
+        check("duplicate level refused", False)
+    except ValueError:
+        check("duplicate level refused", True)
+    upper = structure.place_column(col_type, 0, 0, l3)
+    uz = z_range(upper)
+    check("column on Level 3 runs Level 2 -> Level 3", near(uz[0], 10 * FT) and near(uz[1], 20 * FT),
+          (round(uz[0] / FT, 3), round(uz[1] / FT, 3)))
+
+    grid = tools.add_grid(4, 20 * FT, 3, 30 * FT)
+    tags_v = [a.AxisTag for a in grid.VAxes]
+    tags_u = [a.AxisTag for a in grid.UAxes]
+    check("grid numbered 1-4", tags_v == ["1", "2", "3", "4"], tags_v)
+    check("grid lettered A-C", tags_u == ["A", "B", "C"], tags_u)
+    snaps = tools.snap_points()
+    inter = [p for p in snaps if any(near(p.x, i * 20 * FT, 1e-3) and near(p.y, j * 30 * FT, 1e-3)
+                                     for i in range(4) for j in range(3))]
+    check("snap points at all 12 grid intersections", len({(round(p.x, 3), round(p.y, 3)) for p in inter}) == 12,
+          len(snaps))
+    check("Revit length format", tools.fmt_m(10.5 * FT) == "10' - 6\"", tools.fmt_m(10.5 * FT))
+    check("Revit length input", near(tools.parse_to_m("20' 6\""), 20.5 * FT))
+
     # Saved IFC must carry the same data (what other software sees)
     bpy.ops.bim.save_project(filepath=str(ifc_path))
     import ifcopenshell

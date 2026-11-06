@@ -48,7 +48,14 @@ Business model: **Option A**, open-source GPL product. Revenue comes from suppor
 - [x] Beam placement: two points, z-Justification Top at level, like Revit
 - [x] Blender structural test: 18 checks (heights, depth, lengths, types, levels, saved IFC)
 - [ ] Beam ends trimmed at column faces (Revit cutback joins)
-- [ ] Interactive tools: click to place (Column / Beam / Grid / Level), Revit ribbon, Properties palette, Project Browser
+- [x] Revit-style screen: File + Revit tabs, Structure ribbon in Revit 2027 order, contextual "Modify | <Category>" tab
+- [x] Properties palette: Type Selector (Family / Type), Edit Type, Constraints, Dimensions, Identity Data, view properties
+- [x] Project Browser: Views (all) > Structural Plans per level, 3D Views {3D}, Families
+- [x] Click tools: Column (CL), Beam (BM, with preview line), Brace, Level (LL), Grid (GR, labelled 1-2-3 / A-B-C), snapping to grid intersections and columns
+- [x] Revit mouse (middle pan, Shift+middle orbit, zoom at cursor, Ctrl/Shift select) and two-letter shortcuts (CL, BM, GR, LL, MV, RO, CO, DE, HH, HI, HR, ZF...)
+- [x] Visual GUI test (tools/ui_screenshot.py) compared with Revit 2027 screenshots
+- [ ] Hide Blender's leftover sidebar tabs (Item/Tool/View) and select-mode buttons
+- [ ] Interactive (mouse) testing of the click tools by a person
 - [ ] Grids with Revit bubbles (1, 2, 3 / A, B, C), place columns "At Grids"
 - [ ] Floors, walls, isolated and wall foundations, braces
 
