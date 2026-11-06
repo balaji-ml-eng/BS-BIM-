@@ -10,6 +10,8 @@ Blender's own header draw functions are wrapped, not replaced: in Blender mode t
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import bpy
 
 from . import ribbon
@@ -157,7 +159,7 @@ def setup_layout(window) -> str:
 
 
 def arrange_screen(window) -> str:
-    """Close Blender's side editors and put Properties + Project Browser on the left of the 3D view."""
+    """Close Blender's side editors, then add the ribbon strip and set up the 3D view (in steps)."""
     screen = window.screen
     closed = 0
     for kind in ("OUTLINER", "PROPERTIES", "DOPESHEET_EDITOR", "TIMELINE"):
@@ -165,11 +167,20 @@ def arrange_screen(window) -> str:
             with bpy.context.temp_override(window=window, screen=screen, area=area):
                 if bpy.ops.screen.area_close() == {"FINISHED"}:
                     closed += 1
+    apply_revit_theme()
+    remove_blender_default_objects()
+    _RibbonSetup(window).start()
+    return f"BS BIM screen: {closed} Blender panels closed, building ribbon"
+
+
+def _configure_view3d(window):
+    screen = window.screen
     for area in _areas(screen, "VIEW_3D"):
         space = area.spaces.active
         # Region visibility changes need a window context; without it Blender 5.1 crashes
         # (ED_area_init -> WM_window_get_active_workspace) when called from a timer.
         with bpy.context.temp_override(window=window, screen=screen, area=area):
+            space.show_region_header = False       # Revit's drawing area has no header row
             space.show_region_toolbar = False      # Revit has no tool strip on the left
             space.show_region_ui = True            # our sidebar = Properties + Project Browser
             space.show_region_tool_header = True   # Revit's Options Bar
@@ -179,13 +190,111 @@ def arrange_screen(window) -> str:
         if sidebar and sidebar.alignment == "RIGHT":
             with bpy.context.temp_override(window=window, screen=screen, area=area, region=sidebar):
                 bpy.ops.screen.region_flip()
-        for region in area.regions:
-            if region.type == "UI":
-                try:
-                    region.active_panel_category = "BS BIM"
-                except (AttributeError, TypeError, ValueError):
-                    pass
-    return f"BS BIM screen arranged ({closed} Blender panels closed)"
+
+
+class _RibbonSetup:
+    """Split a ribbon strip off the top of the 3D view, one step per Blender refresh.
+
+    Area sizes and positions only update after Blender redraws, so each step re-reads them.
+    """
+
+    def __init__(self, window):
+        self.window = window
+        self.step = "split"
+        self.tries = 0
+        self.sign = 1
+
+    def start(self):
+        bpy.app.timers.register(self.tick, first_interval=0.1, persistent=True)
+
+    def _pair(self):
+        screen = self.window.screen
+        areas = [a for a in screen.areas if a.type in ("VIEW_3D", "TEXT_EDITOR")]
+        if len(areas) < 2:
+            return None, None
+        areas.sort(key=lambda a: a.y, reverse=True)  # window y grows upwards: first = top
+        return areas[0], areas[1]
+
+    def tick(self):
+        from .ribbon_draw import RIBBON_HEIGHT, scale
+        w, screen = self.window, self.window.screen
+        target = RIBBON_HEIGHT * scale()
+        try:
+            if self.step == "split":
+                if any(a.type == "TEXT_EDITOR" for a in screen.areas):
+                    self.step = "size"
+                    return 0.1
+                view = max(_areas(screen, "VIEW_3D"), key=lambda a: a.width * a.height)
+                with bpy.context.temp_override(window=w, screen=screen, area=view):
+                    bpy.ops.screen.area_split(direction="HORIZONTAL", factor=0.5)
+                self.step = "assign"
+                return 0.1
+            if self.step == "assign":
+                top, bottom = self._pair()
+                if top is None:
+                    return 0.1
+                top.type, bottom.type = "TEXT_EDITOR", "VIEW_3D"
+                space = top.spaces.active
+                with bpy.context.temp_override(window=w, screen=screen, area=top):
+                    space.show_region_header = False
+                    space.show_region_footer = False
+                    space.show_region_ui = False
+                    space.show_line_numbers = False
+                self.step = "size"
+                return 0.1
+            if self.step == "size":
+                top, _ = self._pair()
+                diff = top.height - target
+                if abs(diff) <= 3 or self.tries >= 6:
+                    _configure_view3d(w)
+                    print(f"BS BIM: ribbon strip {top.height}px (target {target:.0f})")
+                    return None
+                if self.tries and abs(diff) >= abs(self.last_diff):
+                    self.sign = -self.sign  # the edge moved the wrong way: reverse
+                self.last_diff = diff
+                self.tries += 1
+                with bpy.context.temp_override(window=w, screen=screen, area=top):
+                    bpy.ops.screen.area_move(x=top.x + top.width // 2, y=top.y, delta=int(self.sign * diff))
+                return 0.1
+        except Exception as e:  # never break Blender's start-up
+            print("BS BIM: ribbon setup stopped:", e)
+            _configure_view3d(w)
+        return None
+
+
+_THEMES = Path(bpy.utils.resource_path("LOCAL")) / "scripts" / "presets" / "interface_theme"
+
+
+def apply_revit_theme():
+    """Light grey interface and a white drawing area, like Revit."""
+    light = _THEMES / "Blender_Light.xml"
+    if light.is_file():
+        bpy.ops.script.execute_preset(filepath=str(light), menu_idname="USERPREF_MT_interface_theme_presets")
+    theme = bpy.context.preferences.themes[0]
+    grad = theme.view_3d.space.gradients
+    grad.background_type = "SINGLE_COLOR"
+    grad.high_gradient = (1.0, 1.0, 1.0)
+    theme.view_3d.grid = (0.85, 0.85, 0.85, 1.0)
+
+
+def apply_blender_theme():
+    dark = _THEMES / "Blender_Dark.xml"
+    if dark.is_file():
+        bpy.ops.script.execute_preset(filepath=str(dark), menu_idname="USERPREF_MT_interface_theme_presets")
+
+
+def remove_blender_default_objects():
+    """Revit starts empty: drop Blender's start-up cube, camera and light when no project is open."""
+    try:
+        import bonsai.tool as tool
+        if tool.Ifc.get() is not None:
+            return
+    except ImportError:
+        pass
+    for name in ("Cube", "Camera", "Light"):
+        obj = bpy.data.objects.get(name)
+        if obj is not None and not obj.get("ifc_definition_id"):
+            bpy.data.objects.remove(obj)
 
 
 # ---------------------------------------------------------------- operators
@@ -213,8 +322,11 @@ class BSBIM_OT_toggle_revit_ui(bpy.types.Operator):
         wm.bsbim_revit_ui = not wm.bsbim_revit_ui
         if wm.bsbim_revit_ui:
             self.report({"INFO"}, setup_layout(context.window))
-        elif "Layout" in bpy.data.workspaces:
-            context.window.workspace = bpy.data.workspaces["Layout"]
+            apply_revit_theme()
+        else:
+            apply_blender_theme()
+            if "Layout" in bpy.data.workspaces:
+                context.window.workspace = bpy.data.workspaces["Layout"]
         return {"FINISHED"}
 
 

@@ -8,7 +8,7 @@ Business logic lives in bsbim_core (vendored into the built extension by tools/b
 import bpy
 from bpy.app.handlers import persistent
 
-from . import browser, keymap, operators, palette, prefs, revit_ui, state, tools, ui
+from . import browser, keymap, operators, palette, prefs, revit_ui, ribbon_draw, state, tools, ui
 
 _classes = (
     prefs.BsbimPreferences,
@@ -19,6 +19,7 @@ _classes = (
     *browser.classes,
     *palette.classes,
     *keymap.classes,
+    *ribbon_draw.classes,
 )
 
 
@@ -41,10 +42,10 @@ _tab_selected: set[int] = set()
 
 
 def _select_bsbim_tab(window):
-    """Open the sidebar on the BS BIM tab (Properties + Project Browser) once per sidebar.
+    """Keep the sidebar on the BS BIM tab (Properties + Project Browser) in Revit mode.
 
     The tab can only be selected after the sidebar has drawn it, so this runs from the watcher.
-    After that the user is free to pick another tab.
+    Blender's own tabs are available in Blender Mode.
     """
     if window.workspace.name != revit_ui.WORKSPACE:
         return
@@ -52,13 +53,12 @@ def _select_bsbim_tab(window):
         if area.type != "VIEW_3D":
             continue
         for region in area.regions:
-            if region.type != "UI" or region.as_pointer() in _tab_selected:
+            if region.type != "UI" or region.active_panel_category == "BS BIM":
                 continue
-            try:
+            try:  # Revit mode keeps the sidebar on Properties + Project Browser
                 region.active_panel_category = "BS BIM"
-                _tab_selected.add(region.as_pointer())
-            except (TypeError, ValueError):
-                pass  # not drawn yet; try again on the next tick
+            except (AttributeError, TypeError, ValueError):
+                pass  # not drawn yet / not settable right now; try again on the next tick
 
 
 def _keep_bsbim_screen():
@@ -91,6 +91,7 @@ def register():
     bpy.types.TOPBAR_MT_editor_menus.append(ui.draw_topbar)
     revit_ui.install_headers()
     keymap.register_keymaps()
+    ribbon_draw.register()
     if not bpy.app.background:
         bpy.context.preferences.inputs.use_zoom_to_mouse = True  # Revit zooms at the cursor
         bpy.app.timers.register(_setup_screen, first_interval=0.5, persistent=True)
@@ -104,6 +105,7 @@ def unregister():
     if bpy.app.timers.is_registered(_keep_bsbim_screen):
         bpy.app.timers.unregister(_keep_bsbim_screen)
     keymap.unregister_keymaps()
+    ribbon_draw.unregister()
     tools.unregister_draw_handler()
     revit_ui.uninstall_headers()
     bpy.types.TOPBAR_MT_editor_menus.remove(ui.draw_topbar)

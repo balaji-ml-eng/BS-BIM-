@@ -47,6 +47,11 @@ def diag(tag):
                 print(f"DIAG {tag}   view3d ui={sp.show_region_ui} toolbar={sp.show_region_toolbar} persp={sp.region_3d.view_perspective}")
 
 
+def step_start_shot():
+    diag("start")
+    shot("0_start.png")
+
+
 def step_load():
     diag("before-load")
     print("WORKSPACE", window().workspace.name)
@@ -93,7 +98,7 @@ def step_quit():
     bpy.ops.wm.quit_blender()
 
 
-plan = [step_load, step_open_3d, step_3d, step_select, step_select_shot, step_plan, step_plan_shot, step_quit]
+plan = [step_start_shot, step_load, step_open_3d, step_3d, step_select, step_select_shot, step_plan, step_plan_shot, step_quit]
 
 
 def run():
