@@ -88,6 +88,25 @@ def key(k):
     w.event_simulate(type=k, value="RELEASE", x=_mouse["x"], y=_mouse["y"])
 
 
+def commands():
+    """Labels of the ribbon's command buttons (not the tabs)."""
+    return [c.label for *_, c in bsbim("ribbon_draw")._hit if c.op not in ("bsbim.set_ribbon_tab", "wm.call_menu")]
+
+
+def s_click_systems_tab():
+    click(*ribbon_button("Systems"))
+
+
+def s_systems_shown():
+    check("clicking the Systems tab shows Duct and Pipe", "Duct" in commands() and "Pipe" in commands(), commands()[:6])
+    shot("ix_systems_tab.png")
+    click(*ribbon_button("Structure"))
+
+
+def s_structure_back():
+    check("clicking the Structure tab brings Beam back", "Beam" in commands(), commands()[:4])
+
+
 def ribbon_button(label):
     """Window coordinates of a ribbon button's centre, from the last ribbon draw."""
     rd = bsbim("ribbon_draw")
@@ -130,7 +149,7 @@ def s_wait_after_load():
     if ifc() is None or ribbon_area() is None or not bsbim("ribbon_draw")._hit or view_area().spaces.active.show_region_toolbar:
         return "again"
     check("project loaded, BS BIM screen rebuilt", ifc() is not None)
-    labels = [c.label for *_, c in bsbim("ribbon_draw")._hit]
+    labels = commands()
     check("Structure ribbon shows Revit buttons", labels[:9] == ["Modify", "Beam", "Wall", "Column", "Floor", "Truss",
                                                                   "Brace", "Beam System", "Connection"], labels[:9])
 
@@ -250,7 +269,7 @@ def s_selected():
     print("modal operators before select:", [op.bl_idname for op in win().modal_operators], flush=True)
     sel = bpy.context.selected_objects
     check("clicking a column selects it", state["col_obj"] in sel, [o.name for o in sel])
-    labels = [c.label for *_, c in bsbim("ribbon_draw")._hit]
+    labels = commands()
     check("ribbon switches to Modify tab", "Delete" in labels and "Move" in labels, labels)
     shot("ix_column_selected.png")
     state["cols"] = count("IfcColumn")
@@ -271,7 +290,7 @@ def s_quit():
     bpy.ops.wm.quit_blender()
 
 
-plan = [s_wait_ribbon, s_load, s_wait_after_load, s_plan, s_click_column_button, s_column_tool_running,
+plan = [s_wait_ribbon, s_load, s_wait_after_load, s_click_systems_tab, s_systems_shown, s_structure_back, s_plan, s_click_column_button, s_column_tool_running,
         s_columns_placed, s_beam_button, s_beam_clicks, s_beam_placed, s_shortcut_cl, s_shortcut_second_key, s_shortcut_click,
         s_shortcut_done, s_pan_checked, s_click_column, s_selected, s_deleted, s_quit]
 tries = {"n": 0}

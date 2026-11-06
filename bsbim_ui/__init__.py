@@ -34,6 +34,10 @@ def _setup_screen():
     if wm.bsbim_revit_ui:
         revit_ui.set_bonsai_workspace_switching(False)
         try:
+            revit_ui.apply_revit_theme()  # light theme + Revit top bar colours on every start
+        except Exception as e:
+            print("BS BIM: theme not applied:", e)
+        try:
             print("BS BIM:", revit_ui.setup_layout(wm.windows[0]))
         except Exception as e:  # never block Blender from starting
             print("BS BIM: could not set up the Revit-style screen:", e)

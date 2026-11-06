@@ -220,6 +220,8 @@ class BSBIM_OT_select(bpy.types.Operator):
                 context.view_layer.objects.active = obj
         elif self.mode == "SET":
             context.view_layer.objects.active = None
+        from .ribbon_draw import redraw_ribbon
+        redraw_ribbon()  # the ribbon switches to / from the Modify tab
         return {"FINISHED"}
 
 

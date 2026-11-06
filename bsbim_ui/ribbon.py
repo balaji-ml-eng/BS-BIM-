@@ -18,6 +18,7 @@ class Cmd:
     op: str = ""                       # operator id, "" = not built yet (greyed)
     kwargs: dict = field(default_factory=dict)
     tip: str = ""
+    dropdown: bool = False             # Revit split button: small arrow under the label
 
 
 def tool(label: str, icon: str, tool_id: str) -> Cmd:
@@ -48,9 +49,9 @@ TABS: dict[str, list[tuple[str, list[Cmd]]]] = {
     "STRUCTURE": [
         ("Structure", [
             Cmd("Beam", "IPO_LINEAR", "bsbim.place_beam", tip="Beam (BM): click start and end points"),
-            tool("Wall", "MOD_BUILD", "bim.wall_tool"),
-            Cmd("Column", "MESH_CYLINDER", "bsbim.place_column", tip="Structural Column (CL): click to place"),
-            tool("Floor", "MESH_PLANE", "bim.slab_tool"),
+            Cmd("Wall", "MOD_BUILD", "wm.tool_set_by_id", {"name": "bim.wall_tool"}, dropdown=True),
+            Cmd("Column", "MESH_CYLINDER", "bsbim.place_column", tip="Structural Column (CL): click to place", dropdown=True),
+            Cmd("Floor", "MESH_PLANE", "wm.tool_set_by_id", {"name": "bim.slab_tool"}, dropdown=True),
             Cmd("Truss", "MOD_LATTICE"),
             Cmd("Brace", "IPO_LINEAR", "bsbim.place_beam", {"brace": True}, "Brace: click start and end points"),
             Cmd("Beam System", "MESH_GRID"),
@@ -59,7 +60,7 @@ TABS: dict[str, list[tuple[str, list[Cmd]]]] = {
         ("Foundation", [
             tool("Isolated", "MESH_CUBE", "bim.footing_tool"),
             Cmd("Wall", "MOD_SOLIDIFY"),
-            tool("Slab", "MESH_PLANE", "bim.slab_tool"),
+            Cmd("Slab", "MESH_PLANE", "wm.tool_set_by_id", {"name": "bim.slab_tool"}, dropdown=True),
         ]),
         ("Datum", [
             Cmd("Level", "TRIA_UP_BAR", "bsbim.add_level"),
@@ -122,6 +123,9 @@ TAB_LABELS = {
     "ARCHITECTURE": "Architecture", "STRUCTURE": "Structure", "SYSTEMS": "Systems", "INSERT": "Insert",
     "ANNOTATE": "Annotate", "ANALYZE": "Analyze", "VIEW": "View", "MANAGE": "Manage",
 }
+
+# Panels whose title has a small drop-down arrow in Revit 2027
+PANEL_MENUS = {"Select", "Connection", "HVAC", "Plumbing & Piping", "Electrical", "Mechanical"}
 
 # Contextual tab, shown like Revit's green "Modify | <Category>" tab while something is selected.
 MODIFY: list[tuple[str, list[Cmd]]] = [

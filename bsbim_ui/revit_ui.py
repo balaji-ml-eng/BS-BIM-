@@ -60,31 +60,43 @@ def _draw_topbar(self, context):
         _draw_topbar_left(self, context)
 
 
+def _view_title(context) -> str:
+    try:
+        import bonsai.tool as tool
+        f = tool.Ifc.get()
+        project = f.by_type("IfcProject")[0].Name if f else None
+    except Exception:
+        project = None
+    view = context.window_manager.bsbim_active_view
+    view_name = f"Structural Plan: {view[5:]}" if view.startswith("PLAN:") else "3D View: {3D}"
+    return f"BS BIM - [{project} - {view_name}]" if project else "BS BIM"
+
+
 def _draw_topbar_left(self, context):
+    """Revit's Quick Access Toolbar: Open, Save, Undo, Redo | Measure, Dimension, Text | 3D View, Section."""
     layout = self.layout
-    wm = context.window_manager
     row = layout.row(align=True)
-    row.menu("BSBIM_MT_file", text="File")
-    row.separator(factor=2)
-    category = _selection_category(context)
-    for key, label in ribbon.TAB_LABELS.items():
-        active = wm.bsbim_ribbon_tab == key and not category
-        op = row.operator("bsbim.set_ribbon_tab", text=label, depress=active, emboss=active)
-        op.tab = key
-    if category:
-        row.separator()
+    row.label(text="", icon=ribbon.icon("MOD_BUILD"))
+    row.separator(factor=0.6)
+    row.operator("bim.load_project", text="", icon=ribbon.icon("FILE_FOLDER"), emboss=False)
+    row.operator("bim.save_project", text="", icon=ribbon.icon("FILE_TICK"), emboss=False)
+    row.operator("ed.undo", text="", icon=ribbon.icon("LOOP_BACK"), emboss=False)
+    row.operator("ed.redo", text="", icon=ribbon.icon("LOOP_FORWARDS"), emboss=False)
+    row.separator(factor=0.6)
+    for icon_name, feature in (("DRIVER_DISTANCE", "Measure"), ("FONT_DATA", "Text")):
         sub = row.row(align=True)
-        sub.alert = True  # Revit shows the contextual tab in green; Blender's closest accent
-        sub.operator("bsbim.set_ribbon_tab", text=f"Modify | {category}", depress=True).tab = wm.bsbim_ribbon_tab
+        sub.enabled = False
+        sub.operator("bsbim.not_ready", text="", icon=ribbon.icon(icon_name), emboss=False).feature = feature
+    row.separator(factor=0.6)
+    row.operator("bsbim.open_view", text="", icon=ribbon.icon("VIEW3D"), emboss=False).kind = "3D"
+    layout.separator_spacer()
+    layout.label(text=_view_title(context))
+    layout.separator_spacer()
 
 
 def _draw_topbar_right(self, context):
     layout = self.layout
-    row = layout.row(align=True)
-    row.operator("bim.save_project", text="", icon=ribbon.icon("FILE_TICK"))
-    row.operator("ed.undo", text="", icon=ribbon.icon("LOOP_BACK"))
-    row.operator("ed.redo", text="", icon=ribbon.icon("LOOP_FORWARDS"))
-    layout.operator("bsbim.toggle_revit_ui", text="Blender Mode", icon=ribbon.icon("BLENDER"))
+    layout.operator("bsbim.toggle_revit_ui", text="Blender Mode", icon=ribbon.icon("BLENDER"), emboss=False)
 
 
 # ---------------------------------------------------------------- 3D view header: commands
@@ -146,6 +158,7 @@ def setup_layout(window) -> str:
     """
     if WORKSPACE in bpy.data.workspaces:
         window.workspace = bpy.data.workspaces[WORKSPACE]
+        _RibbonSetup(window, step="size").start()  # keeps the strip at the current ribbon height
         return "BS BIM workspace activated"
     before = set(bpy.data.workspaces)
     with bpy.context.temp_override(window=window, screen=window.screen):
@@ -195,7 +208,7 @@ def _configure_view3d(window):
             space.show_region_header = False       # Revit's drawing area has no header row
             space.show_region_toolbar = False      # Revit has no tool strip on the left
             space.show_region_ui = True            # our sidebar = Properties + Project Browser
-            space.show_region_tool_header = True   # Revit's Options Bar
+            space.show_region_tool_header = False  # Blender's select-mode row: Revit has none
             space.overlay.show_floor = True
             space.overlay.show_text = False        # no "User Orthographic" text; Revit shows none
         sidebar = next((r for r in area.regions if r.type == "UI"), None)
@@ -233,9 +246,10 @@ class _RibbonSetup:
     Area sizes and positions only update after Blender redraws, so each step re-reads them.
     """
 
-    def __init__(self, window):
+    def __init__(self, window, step: str = "split"):
         self.window = window
-        self.step = "split"
+        self.step = step
+        self.save_after = step == "split"
         self.tries = 0
         self.sign = 1
 
@@ -279,11 +293,14 @@ class _RibbonSetup:
                 return 0.1
             if self.step == "size":
                 top, _ = self._pair()
+                if top is None or top.type != "TEXT_EDITOR":
+                    return None
                 diff = top.height - target
                 if abs(diff) <= 3 or self.tries >= 6:
                     _configure_view3d(w)
                     print(f"BS BIM: ribbon strip {top.height}px (target {target:.0f})")
-                    bpy.app.timers.register(lambda: _save_as_startup(w), first_interval=0.5, persistent=True)
+                    if self.save_after or self.tries:  # new or resized layout: keep it for next time
+                        bpy.app.timers.register(lambda: _save_as_startup(w), first_interval=0.5, persistent=True)
                     return None
                 if self.tries and abs(diff) >= abs(self.last_diff):
                     self.sign = -self.sign  # the edge moved the wrong way: reverse
@@ -314,6 +331,12 @@ def apply_revit_theme():
     grad.background_type = "SINGLE_COLOR"
     grad.high_gradient = (1.0, 1.0, 1.0)
     theme.view_3d.grid = (0.85, 0.85, 0.85, 1.0)
+    top = theme.topbar.space
+    light, dark = (0.851, 0.851, 0.851, 1.0), (0.235, 0.235, 0.235, 1.0)  # #D9D9D9 / #3C3C3C
+    for name in ("back", "header"):
+        setattr(top, name, light if len(getattr(top, name)) == 4 else light[:3])
+    for name in ("text", "title", "header_text", "text_hi", "header_text_hi"):
+        setattr(top, name, dark[:3] if len(getattr(top, name)) == 3 else dark)
 
 
 def apply_blender_theme():

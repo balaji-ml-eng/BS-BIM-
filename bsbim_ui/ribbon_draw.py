@@ -25,22 +25,47 @@ from gpu_extras.batch import batch_for_shader
 
 from . import ribbon
 
-RIBBON_HEIGHT = 92  # pixels at 100% UI scale
+TAB_ROW = 22      # pixels at 100% UI scale
+PANEL_ROW = 96
+RIBBON_HEIGHT = TAB_ROW + PANEL_ROW + 2
 
-# Revit 2027 light ribbon colours
-BG = (0.965, 0.965, 0.965, 1.0)
-TITLE_BG = (0.91, 0.91, 0.91, 1.0)
-SEPARATOR = (0.78, 0.78, 0.78, 1.0)
-TEXT = (0.13, 0.13, 0.13, 1.0)
-TEXT_DISABLED = (0.62, 0.62, 0.62, 1.0)
-HOVER = (0.80, 0.89, 0.98, 1.0)
-HOVER_EDGE = (0.45, 0.66, 0.90, 1.0)
+
+def _hex(h: str, a: float = 1.0):
+    h = h.lstrip("#")
+    return (int(h[0:2], 16) / 255, int(h[2:4], 16) / 255, int(h[4:6], 16) / 255, a)
+
+
+# Colours measured from a Revit 2027 screenshot
+TAB_BG = _hex("D9D9D9")
+BG = _hex("F5F5F5")              # ribbon panels and the active tab
+FILE_TAB = _hex("2B7BB3")
+TAB_EDGE = _hex("BBBBBB")
+BORDER = _hex("C1C1C1")
+SEPARATOR = _hex("DADADA")
+TEXT = _hex("3C3C3C")
+TEXT_DISABLED = _hex("A6A6A6")
+WHITE = _hex("FFFFFF")
+ACTIVE_FILL = _hex("DDEEF6")     # pressed Modify button
+ACTIVE_EDGE = _hex("77C3E6")
+HOVER = _hex("E5F1FB")
+HOVER_EDGE = _hex("9CCBEE")
+CONTEXT_TAB = _hex("E3F1DE")     # contextual "Modify | ..." tab
+CONTEXT_EDGE = _hex("6DB33F")
 DARK = (0.28, 0.30, 0.33, 1.0)
 BLUE = (0.16, 0.45, 0.78, 1.0)
 STEEL = (0.45, 0.52, 0.60, 1.0)
 CONCRETE = (0.74, 0.74, 0.72, 1.0)
 GREEN = (0.20, 0.60, 0.30, 1.0)
 RED = (0.80, 0.25, 0.20, 1.0)
+
+def load_font():
+    """Kept for registration. Segoe UI loaded through blf drew nothing in the real window
+    (Blender 5.1), so the ribbon uses Blender's own UI font, which always draws."""
+
+
+def font() -> int:
+    return 0
+
 
 # Button rectangles from the last draw: (x0, y0, x1, y1, Cmd)
 _hit: list[tuple[float, float, float, float, ribbon.Cmd]] = []
@@ -87,17 +112,23 @@ def outline(x0, y0, x1, y1, color):
 
 
 def text(x, y, s, size, color, center=False):
-    blf.size(0, size)
+    f = font()
+    blf.size(f, size)
     if center:
-        x -= blf.dimensions(0, s)[0] / 2
-    blf.color(0, *color)
-    blf.position(0, x, y, 0)
-    blf.draw(0, s)
+        x -= blf.dimensions(f, s)[0] / 2
+    blf.color(f, *color)
+    blf.position(f, x, y, 0)
+    blf.draw(f, s)
 
 
 def text_width(s, size) -> float:
-    blf.size(0, size)
-    return blf.dimensions(0, s)[0]
+    f = font()
+    blf.size(f, size)
+    return blf.dimensions(f, s)[0]
+
+
+def arrow_down(cx, cy, size, color):
+    _draw("TRIS", [(cx - size, cy + size / 2), (cx + size, cy + size / 2), (cx, cy - size / 2)], color)
 
 
 # ------------------------------------------------------------------ icons (unit square 0..1)
@@ -225,6 +256,49 @@ def current_panels(context):
     return [select, *ribbon.TABS[context.window_manager.bsbim_ribbon_tab]]
 
 
+def _tool_running(context) -> bool:
+    return any(op.bl_idname.startswith("BSBIM_OT_place") for op in context.window.modal_operators)
+
+
+def _draw_tabs(context, w, h, s):
+    """Row of tabs: blue File tab, then the Revit tabs; the active tab joins the panels below."""
+    from .revit_ui import _selection_category
+    y0, y1 = h - TAB_ROW * s, h
+    rect(0, y0, w, y1, TAB_BG)
+    size = 12 * s
+    x = 2 * s
+    fw = text_width("File", size) + 22 * s
+    rect(x, y0 + 1 * s, x + fw, y1 - 2 * s, FILE_TAB)
+    text(x + fw / 2, y0 + 6 * s, "File", size, WHITE, center=True)
+    _hit.append((x, y0, x + fw, y1, ribbon.Cmd("File", "", "wm.call_menu", {"name": "BSBIM_MT_file"})))
+    x += fw + 2 * s
+    category = _selection_category(context)
+    active_key = None if category else context.window_manager.bsbim_ribbon_tab
+    tabs = list(ribbon.TAB_LABELS.items())
+    if category:
+        tabs.append(("__context__", f"Modify | {category}"))
+    active_x = None
+    for key, label in tabs:
+        tw = text_width(label, size) + 18 * s
+        is_active = key == active_key or key == "__context__"
+        if is_active:
+            fill = CONTEXT_TAB if key == "__context__" else BG
+            rect(x, y0, x + tw, y1 - 1 * s, fill)
+            _draw("LINE_STRIP", [(x, y0), (x, y1 - 1 * s), (x + tw, y1 - 1 * s), (x + tw, y0)],
+                  CONTEXT_EDGE if key == "__context__" else TAB_EDGE)
+            active_x = (x, x + tw)
+        elif x <= _hover["x"] <= x + tw and y0 <= _hover["y"] <= y1:
+            rect(x, y0 + 1 * s, x + tw, y1 - 2 * s, HOVER)
+        text(x + tw / 2, y0 + 6 * s, label, size, TEXT, center=True)
+        if key != "__context__":
+            _hit.append((x, y0, x + tw, y1, ribbon.Cmd(label, "", "bsbim.set_ribbon_tab", {"tab": key})))
+        x += tw
+    if active_x:  # line under the tabs, open under the active one (Revit's folder-tab look)
+        _draw("LINES", [(0, y0), (active_x[0], y0), (active_x[1], y0), (w, y0)], TAB_EDGE)
+    else:
+        _draw("LINES", [(0, y0), (w, y0)], TAB_EDGE)
+
+
 def draw_ribbon():
     context = bpy.context
     area = context.area
@@ -234,36 +308,49 @@ def draw_ribbon():
     s = scale()
     w, h = region.width, region.height
     gpu.state.blend_set("ALPHA")
-    rect(0, 0, w, h, BG)
-    title_h = 18 * s
-    rect(0, 0, w, title_h, TITLE_BG)
-    _draw("LINES", [(0, h - 1), (w, h - 1), (0, title_h), (w, title_h)], SEPARATOR)
-
-    font = 11 * s
-    icon = 30 * s
-    pad = 6 * s
     _hit.clear()
-    x = 4 * s
+    panel_top = h - TAB_ROW * s
+    rect(0, 0, w, panel_top, BG)
+    _draw("LINES", [(0, 1), (w, 1)], BORDER)
+    _draw_tabs(context, w, h, s)
+
+    font_size = 12 * s
+    icon = 32 * s
+    pad = 5 * s
+    title_y = 5 * s
+    modify_active = not _tool_running(context)
+    x = 3 * s
     for title, cmds in current_panels(context):
         panel_x0 = x
         for c in cmds:
-            lines = _wrap(c.label, font, 64 * s)
-            bw = max(max(text_width(l, font) for l in lines) + 2 * pad, icon + 2 * pad)
-            x0, x1, y0, y1 = x, x + bw, title_h + 2 * s, h - 3 * s
+            lines = _wrap(c.label, font_size, 60 * s)
+            bw = max(max(text_width(l, font_size) for l in lines) + 2 * pad, icon + 2 * pad)
+            x0, x1 = x, x + bw
+            y0, y1 = 20 * s, panel_top - 3 * s
             enabled = bool(c.op)
-            if enabled and x0 <= _hover["x"] <= x1 and y0 <= _hover["y"] <= y1:
+            pressed = c.label == "Modify" and modify_active
+            if pressed:
+                rect(x0, y0, x1, y1, ACTIVE_FILL)
+                outline(x0, y0, x1, y1, ACTIVE_EDGE)
+            elif enabled and x0 <= _hover["x"] <= x1 and y0 <= _hover["y"] <= y1:
                 rect(x0, y0, x1, y1, HOVER)
                 outline(x0, y0, x1, y1, HOVER_EDGE)
-            draw_icon(c.label, x + (bw - icon) / 2, h - icon - 6 * s, icon, enabled)
-            ty = h - icon - 6 * s - font - 3 * s
+            icon_y = panel_top - icon - 7 * s
+            draw_icon(c.label, x + (bw - icon) / 2, icon_y, icon, enabled)
+            ty = icon_y - font_size - 2 * s
             for line in lines:
-                text(x + bw / 2, ty, line, font, TEXT if enabled else TEXT_DISABLED, center=True)
-                ty -= font + 2 * s
+                text(x + bw / 2, ty, line, font_size, TEXT if enabled else TEXT_DISABLED, center=True)
+                ty -= font_size + 1 * s
+            if c.dropdown:
+                arrow_down(x + bw / 2, ty + font_size - 2 * s, 3 * s, TEXT if enabled else TEXT_DISABLED)
             _hit.append((x0, y0, x1, y1, c))
-            x += bw + 2 * s
+            x += bw + 1 * s
         x += 6 * s
-        text((panel_x0 + x) / 2 - 3 * s, 5 * s, title, 10.5 * s, TEXT, center=True)
-        _draw("LINES", [(x - 3 * s, 4 * s), (x - 3 * s, h - 6 * s)], SEPARATOR)
+        cx = (panel_x0 + x) / 2 - 3 * s
+        text(cx, title_y, title, font_size, TEXT, center=True)
+        if title in ribbon.PANEL_MENUS:
+            arrow_down(cx + text_width(title, font_size) / 2 + 7 * s, title_y + 5 * s, 3 * s, TEXT)
+        _draw("LINES", [(x - 3 * s, 5 * s), (x - 3 * s, panel_top - 5 * s)], SEPARATOR)
     gpu.state.blend_set("NONE")
 
 
@@ -349,6 +436,7 @@ _keymaps: list = []
 
 def register():
     global _handle
+    load_font()
     _handle = bpy.types.SpaceTextEditor.draw_handler_add(draw_ribbon, (), "WINDOW", "POST_PIXEL")
     bpy.app.handlers.depsgraph_update_post.append(redraw_ribbon)
     kc = bpy.context.window_manager.keyconfigs.addon
