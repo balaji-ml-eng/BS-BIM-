@@ -10,7 +10,13 @@ Business model: **Option A**, open-source GPL product. Revenue comes from suppor
 - [x] `bsbim_rvt_bridge`: CLI (`backends`, `info`, `convert`, `batch`), rvt-rs backend, automatic quality fallback
 - [x] `bsbim_ui`: BS BIM panel and top menu (New Project, Open Revit File, Quality Report), preferences
 - [x] `rvt` 0.15.0 installed (rvt-rs reader)
-- [ ] Run the benchmark on real company RVT files  ← **next**
+- [x] First real benchmark (2 confidential Revit 2024 models, ~150 MB each, results kept off Git):
+  - Model A (Revit 2024 build 2024-04): 736 elements in 30 s. Walls, roof, doors, beams, columns, footings, pipes, ducts and conduits all came through on the correct storeys. Only 34% have their real shape (485 are placeholder boxes), and the reader decoded about 3% of the records Revit declares. Score 80.5.
+  - Model B (same project, saved by Revit 2024 build 2025-09): **0 elements**. Only materials and levels were read. The newer 2024 update build is not yet supported by rvt-rs 0.15.
+- [x] Honest scoring: the report separates real shapes from placeholder boxes, and adds Revit coverage %
+- [x] `tools/render_preview.py`: headless preview images for visual checks
+- [ ] Test more files (Revit 2019–2026, more projects)  ← **next**
+- [ ] Add a second backend (RvtIO / rvt-open) and compare on Model B
 
 ## M1: RVT Bridge (weeks 3–14)
 - [ ] Benchmark rvt-rs on 20–30 company files (Revit 2019–2026, small to large)

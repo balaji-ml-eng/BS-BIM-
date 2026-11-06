@@ -77,3 +77,19 @@ def test_cli_convert_json(fake_backend, rvt_file, tmp_path, capsys):
 def test_cli_error_exit_code(fake_backend, tmp_path, capsys):
     assert bridge_main(["convert", str(tmp_path / "missing.rvt"), "--json"]) == 1
     assert "error" in json.loads(capsys.readouterr().out)
+
+
+def test_box_only_geometry_lowers_score(rvt_file, tmp_path):
+    backends.register(FakeBackend(box_only=1), first=True)
+    try:
+        r = conv.convert(rvt_file, tmp_path / "o.ifc")
+        summary = conv.batch(rvt_file.parent, tmp_path / "batch")
+    finally:
+        backends.unregister("fake")
+    rep = r.report
+    assert (rep.with_geometry, rep.box_only, rep.with_real_geometry) == (3, 1, 2)
+    # real shape 2/3 + type 2/3 + material 2/3 + properties 0 + storey 1 = 3 / 5
+    assert rep.score == 60.0
+    assert r.revit_coverage == 0.5
+    row = next(csv.DictReader(summary.open(encoding="utf-8")))
+    assert (row["real_shape_%"], row["box_only"], row["revit_coverage_%"]) == ("66.7", "1", "50.0")

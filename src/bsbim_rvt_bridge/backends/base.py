@@ -18,6 +18,10 @@ class BackendResult:
     warnings: list[str] = field(default_factory=list)
     attempts: list[str] = field(default_factory=list)  # "mode: reason" for modes that failed
     diagnostics: dict[str, Any] | None = None
+    # Elements whose body is only a placeholder box, not their real shape (None = unknown).
+    box_only: int | None = None
+    # Share (0-1) of the element records declared in the Revit file that the reader decoded (None = unknown).
+    revit_coverage: float | None = None
 
 
 class Backend(Protocol):

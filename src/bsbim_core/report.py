@@ -25,20 +25,28 @@ class ModelReport:
     with_properties: int = 0
     with_storey: int = 0
     by_class: dict[str, int] = field(default_factory=dict)
+    # Elements whose geometry is only a placeholder box. An IFC file cannot tell us this,
+    # so importers that know it (e.g. the RVT Bridge) set it.
+    box_only: int = 0
 
     def ratio(self, count: int) -> float:
         return count / self.total_elements if self.total_elements else 0.0
 
     @property
+    def with_real_geometry(self) -> int:
+        return max(0, self.with_geometry - self.box_only)
+
+    @property
     def score(self) -> float:
-        """0-100: average share of elements that carry geometry, type, material, properties and a storey."""
+        """0-100: average share of elements with real geometry, type, material, properties and a storey."""
         if not self.total_elements:
             return 0.0
-        parts = (self.with_geometry, self.with_type, self.with_material, self.with_properties, self.with_storey)
+        parts = (self.with_real_geometry, self.with_type, self.with_material, self.with_properties, self.with_storey)
         return round(100.0 * sum(self.ratio(p) for p in parts) / len(parts), 1)
 
     def to_dict(self) -> dict:
         d = asdict(self)
+        d["with_real_geometry"] = self.with_real_geometry
         d["score"] = self.score
         return d
 
@@ -83,6 +91,7 @@ def format_report(r: ModelReport) -> str:
         f"Rooms:     {r.spaces}",
         f"Elements:  {r.total_elements}",
         line("with geometry", r.with_geometry),
+        *([line("  real shape", r.with_real_geometry), line("  box only", r.box_only)] if r.box_only else []),
         line("with type", r.with_type),
         line("with material", r.with_material),
         line("with properties", r.with_properties),

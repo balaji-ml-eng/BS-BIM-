@@ -29,6 +29,7 @@ class ConversionResult:
     warnings: list[str] = field(default_factory=list)
     attempts: list[str] = field(default_factory=list)
     diagnostics: dict[str, Any] | None = None
+    revit_coverage: float | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -37,6 +38,7 @@ class ConversionResult:
             "backend": self.backend,
             "mode_used": self.mode_used,
             "seconds": round(self.seconds, 2),
+            "revit_coverage": self.revit_coverage,
             "revit_info": self.revit_info,
             "report": self.report.to_dict() if self.report else None,
             "warnings": self.warnings,
@@ -106,6 +108,10 @@ def convert(
         report = build_report(ifcopenshell.open(str(out)))
     except (OSError, RuntimeError) as e:
         raise BackendError(f"{b.name} wrote an IFC file that cannot be opened: {e}") from e
+    if result.box_only:
+        report.box_only = min(result.box_only, report.with_geometry)
+    if isinstance((result.diagnostics or {}).get("input"), dict):
+        result.diagnostics["input"] = redact_info(result.diagnostics["input"])
 
     conv = ConversionResult(
         source=source,
@@ -118,6 +124,7 @@ def convert(
         warnings=result.warnings,
         attempts=result.attempts,
         diagnostics=result.diagnostics,
+        revit_coverage=result.revit_coverage,
     )
     if report_path:
         Path(report_path).write_text(json.dumps(conv.to_dict(), indent=2, default=str), encoding="utf-8")
@@ -126,8 +133,8 @@ def convert(
 
 BATCH_COLUMNS = (
     "file", "revit_version", "size_mb", "status", "backend", "mode", "seconds",
-    "elements", "geometry_%", "type_%", "material_%", "properties_%", "storey_%",
-    "storeys", "rooms", "score", "error",
+    "elements", "geometry_%", "real_shape_%", "box_only", "type_%", "material_%", "properties_%", "storey_%",
+    "storeys", "rooms", "revit_coverage_%", "score", "error",
 )
 
 
@@ -151,8 +158,11 @@ def batch(folder: str | Path, out_dir: str | Path, backend: str | None = None, m
                     status="ok", backend=r.backend, mode=r.mode_used, seconds=round(r.seconds, 1),
                     revit_version=r.revit_info.get("revit_version"),
                     elements=rep.total_elements, storeys=len(rep.storeys), rooms=rep.spaces, score=rep.score,
+                    box_only=rep.box_only,
                     **{
+                        "revit_coverage_%": None if r.revit_coverage is None else round(100 * r.revit_coverage, 1),
                         "geometry_%": round(100 * rep.ratio(rep.with_geometry), 1),
+                        "real_shape_%": round(100 * rep.ratio(rep.with_real_geometry), 1),
                         "type_%": round(100 * rep.ratio(rep.with_type), 1),
                         "material_%": round(100 * rep.ratio(rep.with_material), 1),
                         "properties_%": round(100 * rep.ratio(rep.with_properties), 1),

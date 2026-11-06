@@ -35,8 +35,9 @@ class FakeBackend:
     license = "test"
     url = ""
 
-    def __init__(self, fail_modes: tuple[str, ...] = ()):
+    def __init__(self, fail_modes: tuple[str, ...] = (), box_only: int | None = None):
         self.fail_modes = fail_modes
+        self.box_only = box_only
 
     def availability(self):
         return True, "fake 1.0"
@@ -56,7 +57,8 @@ class FakeBackend:
                 attempts.append(f"{m}: not complete enough")
                 continue
             return BackendResult(ifc_text=sample_model_with_walls().to_string(), mode_used=m,
-                                 warnings=["test warning"], attempts=attempts)
+                                 warnings=["test warning"], attempts=attempts,
+                                 box_only=self.box_only, revit_coverage=0.5 if self.box_only is not None else None)
         raise BackendError("No conversion mode succeeded")
 
 

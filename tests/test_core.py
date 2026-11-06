@@ -88,3 +88,11 @@ def test_core_cli(tmp_path, capsys):
     assert core_main(["report", str(out), "--json"]) == 0
     assert '"project_name": "CLI"' in capsys.readouterr().out
     assert core_main(["new-project", str(out), "--floors", "0"]) == 1
+
+
+def test_report_box_only_shown():
+    r = report.build_report(sample_model_with_walls(n_walls=2, typed=2))
+    r.box_only = 1
+    text = report.format_report(r)
+    assert "real shape" in text and "box only" in text
+    assert r.to_dict()["with_real_geometry"] == 1

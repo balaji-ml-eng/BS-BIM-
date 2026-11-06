@@ -66,11 +66,15 @@ class RvtRsBackend:
                 diagnostics = doc.export_diagnostics()
             except (ValueError, RuntimeError) as e:
                 attempts.append(f"diagnostics: {e}")
+            exported = (diagnostics or {}).get("exported") or {}
+            coverage = (diagnostics or {}).get("source_coverage") or {}
             return BackendResult(
                 ifc_text=text,
                 mode_used=m,
                 warnings=[str(w.message) for w in caught],
                 attempts=attempts,
                 diagnostics=diagnostics,
+                box_only=exported.get("bounding_box_bodies"),
+                revit_coverage=coverage.get("decoded_element_fraction"),
             )
         raise BackendError("No conversion mode succeeded:\n  " + "\n  ".join(attempts))
