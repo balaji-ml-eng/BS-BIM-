@@ -14,7 +14,7 @@ import ifcopenshell
 from bsbim_core.report import ModelReport, build_report
 
 from . import REVIT_SUFFIXES
-from .backends import BackendError, pick
+from .backends import Backend, BackendError, all_backends, pick
 
 
 @dataclass
@@ -78,6 +78,22 @@ def redact_info(data: dict[str, Any]) -> dict[str, Any]:
     return clean
 
 
+def _file_info(source: Path, preferred: Backend) -> dict[str, Any]:
+    """Redacted file identity from ``preferred``, or from any backend that can tell the Revit version."""
+    errors = []
+    for b in [preferred] + [x for x in all_backends() if x is not preferred]:
+        if not b.availability()[0]:
+            continue
+        try:
+            data = redact_info(b.read_info(source, redact=True))
+        except BackendError as e:
+            errors.append(str(e))
+            continue
+        if data.get("revit_version") is not None:
+            return data
+    return {"error": "; ".join(errors)} if errors else {}
+
+
 def info(path: str | Path, backend: str | None = None, redact: bool = False) -> dict[str, Any]:
     data = pick(backend).read_info(check_input(path), redact=redact)
     return redact_info(data) if redact else data
@@ -96,10 +112,7 @@ def convert(
     b = pick(backend)
 
     start = time.perf_counter()
-    try:
-        revit_info = redact_info(b.read_info(source, redact=True))
-    except BackendError as e:
-        revit_info = {"error": str(e)}
+    revit_info = _file_info(source, b)
     result = b.convert(source, mode=mode, allow_partial=allow_partial)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(result.ifc_text, encoding="utf-8")
@@ -140,19 +153,31 @@ BATCH_COLUMNS = (
 
 def batch(folder: str | Path, out_dir: str | Path, backend: str | None = None, mode: str = "auto",
           allow_partial: bool = False) -> Path:
-    """Convert every Revit file under ``folder``; write IFCs, JSON reports and summary.csv to ``out_dir``."""
+    """Convert every Revit file under ``folder``; write IFCs, JSON reports and summary.csv to ``out_dir``.
+
+    ``backend="all"`` runs every available backend on every file (one row each) to compare readers.
+    """
     folder, out_dir = Path(folder), Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     files = sorted(p for p in folder.rglob("*") if p.is_file() and p.suffix.lower() in REVIT_SUFFIXES)
+    if backend == "all":
+        names: list[str | None] = [b.name for b in all_backends() if b.availability()[0]]
+        if not names:
+            pick()  # raises the "no backend available" error with reasons
+    else:
+        names = [backend]
     summary = out_dir / "summary.csv"
     with summary.open("w", newline="", encoding="utf-8") as fh:
         writer = csv.DictWriter(fh, fieldnames=BATCH_COLUMNS)
         writer.writeheader()
-        for f in files:
-            row: dict[str, Any] = {"file": str(f.relative_to(folder)), "size_mb": round(f.stat().st_size / 1e6, 1)}
+        for f, name in ((f, n) for f in files for n in names):
+            row: dict[str, Any] = {"file": str(f.relative_to(folder)), "size_mb": round(f.stat().st_size / 1e6, 1),
+                                   "backend": name}
             stem = f.relative_to(folder).with_suffix("").as_posix().replace("/", "__")
+            if backend == "all":
+                stem += f".{name}"
             try:
-                r = convert(f, out_dir / f"{stem}.ifc", backend, mode, allow_partial, out_dir / f"{stem}.report.json")
+                r = convert(f, out_dir / f"{stem}.ifc", name, mode, allow_partial, out_dir / f"{stem}.report.json")
                 rep = r.report
                 row.update(
                     status="ok", backend=r.backend, mode=r.mode_used, seconds=round(r.seconds, 1),

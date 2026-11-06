@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from .base import Backend, BackendError, BackendResult
 from .rvt_rs import RvtRsBackend
+from .rvtio import RvtIOBackend
 
-# Planned: rvt-open (Apache-2.0), RvtIO CLI (MIT), BS BIM Revit add-in (official Revit API).
-_BACKENDS: list[Backend] = [RvtRsBackend()]
+# Planned: rvt-open (Apache-2.0), BS BIM Revit add-in (official Revit API).
+_BACKENDS: list[Backend] = [RvtRsBackend(), RvtIOBackend()]
 
 
 def all_backends() -> list[Backend]:

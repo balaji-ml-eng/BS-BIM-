@@ -15,8 +15,15 @@ Business model: **Option A**, open-source GPL product. Revenue comes from suppor
   - Model B (same project, saved by Revit 2024 build 2025-09): **0 elements**. Only materials and levels were read. The newer 2024 update build is not yet supported by rvt-rs 0.15.
 - [x] Honest scoring: the report separates real shapes from placeholder boxes, and adds Revit coverage %
 - [x] `tools/render_preview.py`: headless preview images for visual checks
-- [ ] Test more files (Revit 2019–2026, more projects)  ← **next**
-- [ ] Add a second backend (RvtIO / rvt-open) and compare on Model B
+- [x] Public benchmark: 20 official Autodesk sample files (Revit 2020–2027, 6 MB–132 MB), stored in `H:\Bala Data\PublicSampleModels`
+  - 20 of 20 converted, with no failures. Speed: 1–29 s per file.
+  - The same model gives the same element count in every version (rac_basic 450, rst_basic 454), so element reading works for 2020–2027.
+  - Real shape (not box): 12% on 2020–2022 and about 27% on 2024–2027 (rac_basic). rst_basic reaches 83% on 2024 but only 6–7% on 2025–2027 (a regression in rvt-rs).
+  - Type and material data: weak on 2020–2023 architecture (45% / 35%), good on 2024+ (99% / 89%).
+  - Snowdon Towers Arch 2024 (95 MB, 5,993 elements): score 86.5. Snowdon Structural 2024: score 95.8. Previews look correct.
+  - Largest gaps: MEP (rme 2024: 89% boxes) and older versions (2020–2023: mostly boxes).
+- [x] RvtIO backend code + `batch --backend all` compare mode (tests use a fake rvtio)
+- [ ] Install RvtIO (needs user approval) and run the compare on all 22 files  ← **next**
 
 ## M1: RVT Bridge (weeks 3–14)
 - [ ] Benchmark rvt-rs on 20–30 company files (Revit 2019–2026, small to large)

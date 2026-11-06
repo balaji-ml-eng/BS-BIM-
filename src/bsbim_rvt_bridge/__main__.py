@@ -24,7 +24,7 @@ from .convert import batch, convert, info
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="bsbim_rvt_bridge", description=f"BS BIM RVT Bridge {__version__}")
-    parser.add_argument("--backend", help="Backend name (default: first available)")
+    parser.add_argument("--backend", help="Backend name (default: first available). batch also accepts \"all\" to compare every reader")
     sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("backends", help="List RVT reader backends and whether they are installed")

@@ -12,6 +12,7 @@ BS BIM itself is licensed **GPL-3.0-or-later** (see `LICENSE`). All BS BIM code 
 | IfcOpenShell | 0.9.0.post1 | LGPL-3.0-or-later | IFC engine for `bsbim_core` | Yes | LGPL: also usable from closed code if needed later |
 | numpy | (bundled with Blender / pip) | BSD-3-Clause | Placement matrices | Yes | |
 | rvt (rvt-rs) | 0.15.0 | Apache-2.0 | RVT Bridge backend | Yes, in the separate bridge | GPL-3 compatible. Keep its `NOTICE` file. Clean-room reader, not affiliated with Autodesk |
+| RvtIO CLI (planned) | 0.2.0 | MIT (deps: OpenMcdf MPL-2.0, SharpZipLib MIT) | RVT Bridge backend, separate process | Yes, as a separate program | MPL-2.0 is file-level copyleft: ship OpenMcdf unmodified with its notice |
 | pytest | 9.x | MIT | Tests only | No | |
 
 ## Rules
