@@ -15,12 +15,11 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="bsbim_core", description="BS BIM core tools")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    p_new = sub.add_parser("new-project", help="Create a new project IFC from the company template")
+    p_new = sub.add_parser("new-project", help="Create a new project IFC from a US or UK template")
     p_new.add_argument("output", help="Output .ifc path")
-    p_new.add_argument("--name", default="BS BIM Project")
-    p_new.add_argument("--floors", type=int, default=2, help="Number of floors above ground, including ground")
-    p_new.add_argument("--floor-height", type=float, default=3000.0, help="Floor-to-floor height in mm")
-    p_new.add_argument("--no-types", action="store_true", help="Do not add template wall/slab types")
+    p_new.add_argument("--name", default="Project Name")
+    p_new.add_argument("--template", default="us_structural", choices=sorted(project.TEMPLATES))
+    p_new.add_argument("--no-types", action="store_true", help="Do not add the template's types")
 
     p_rep = sub.add_parser("report", help="Print a model quality report for an IFC file")
     p_rep.add_argument("ifc")
@@ -29,8 +28,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         if args.command == "new-project":
-            settings = project.ProjectSettings.with_floors(args.name, args.floors, args.floor_height)
-            settings.include_types = not args.no_types
+            settings = project.ProjectSettings(name=args.name, template=args.template, include_types=not args.no_types)
             path = project.save(project.create_project(settings), args.output)
             print(f"Created {path}")
         else:

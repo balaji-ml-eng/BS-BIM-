@@ -31,14 +31,14 @@ try:
     import bonsai.tool as tool
 
     ifc_path = work / "smoke_project.ifc"
-    res = bpy.ops.bsbim.new_project(filepath=str(ifc_path), project_name="Smoke", floors=3, floor_height=3200)
+    res = bpy.ops.bsbim.new_project(filepath=str(ifc_path), project_name="Smoke", template="us_structural")
     check("new_project finished", res == {"FINISHED"}, res)
     check("ifc written", ifc_path.is_file())
     f = tool.Ifc.get()
     check("bonsai has the project open", f is not None and f.by_type("IfcProject")[0].Name == "Smoke")
     storeys = sorted((s.Name, s.Elevation) for s in f.by_type("IfcBuildingStorey"))
-    check("storeys", len(storeys) == 4, storeys)
-    check("template types", len(f.by_type("IfcElementType")) == 7)
+    check("storeys", [n for n, _ in storeys] == ["Level 1", "Level 2"], storeys)
+    check("template types", len(f.by_type("IfcElementType")) > 20, len(f.by_type("IfcElementType")))
     check("blender objects created", len(bpy.data.objects) > 0, f"{len(bpy.data.objects)} objects")
 
     res = bpy.ops.bsbim.model_report()

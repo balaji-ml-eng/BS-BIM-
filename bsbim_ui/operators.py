@@ -9,6 +9,7 @@ from bpy_extras.io_utils import ExportHelper, ImportHelper
 from . import bridge_client, prefs
 from .bsbim_core import project as core_project
 from .bsbim_core import report as core_report
+from .bsbim_core import template as core_template
 
 # Lines of the last model report, drawn by the panel.
 last_report: list[str] = []
@@ -36,25 +37,28 @@ def _set_report(lines: list[str]) -> None:
 
 
 class BSBIM_OT_new_project(bpy.types.Operator, ExportHelper):
-    """Create a new project from the BS BIM company template and open it"""
+    """Create a new project from a US or UK template and open it"""
 
     bl_idname = "bsbim.new_project"
-    bl_label = "New BS BIM Project"
+    bl_label = "New Project"
     bl_options = {"REGISTER"}
 
     filename_ext = ".ifc"
     filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
-    project_name: bpy.props.StringProperty(name="Project name", default="New Project")
-    floors: bpy.props.IntProperty(name="Floors", description="Floors including ground", default=2, min=1, max=200)
-    floor_height: bpy.props.FloatProperty(name="Floor height (mm)", default=3000.0, min=1000.0, max=20000.0)
-    include_types: bpy.props.BoolProperty(name="Add template wall/slab types", default=True)
+    project_name: bpy.props.StringProperty(name="Project name", default="Project Name")
+    template: bpy.props.EnumProperty(
+        name="Template",
+        items=[(t.key, t.label, "") for t in core_template.TEMPLATES.values()],
+        default="us_structural",
+    )
+    include_types: bpy.props.BoolProperty(name="Load template types", default=True)
 
     def execute(self, context):
         if not _need_bonsai(self):
             return {"CANCELLED"}
         try:
-            settings = core_project.ProjectSettings.with_floors(self.project_name, self.floors, self.floor_height)
-            settings.include_types = self.include_types
+            settings = core_project.ProjectSettings(
+                name=self.project_name, template=self.template, include_types=self.include_types)
             path = core_project.save(core_project.create_project(settings), self.filepath)
         except (ValueError, OSError) as e:
             self.report({"ERROR"}, str(e))

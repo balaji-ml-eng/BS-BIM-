@@ -37,6 +37,21 @@ Business model: **Option A**, open-source GPL product. Revenue comes from suppor
 - [ ] C# add-in on the official Revit API: export clean IFC with BS BIM mapping
 - [ ] Import BS BIM IFC back as native Revit elements
 
+## Structure first (user priority: Structure → Architecture → MEP)
+- [x] US Structural template: feet-inches, Level 1/Level 2 (10'-0"), AISC steel from Bonsai's library with Revit names
+      (W Shapes : W12x26, W Shapes-Column : W10x33, HSS-Hollow Structural Section-Column : HSS6x6x3/8, C Shapes, L-Angle),
+      concrete beams and columns, floors, walls, Revit material names (Steel ASTM A992, Concrete, Normal Weight - 4 ksi)
+- [x] UK Structural template: mm, concrete columns, beams, floors and walls (C30/C40)
+- [ ] UK steel sections UB, UC, PFC, SHS, CHS (BS EN 10365/10210). Needs a verified dimension table.
+- [x] Revit-style length format and input: `10' - 6 1/2"`, `4000`
+- [x] Column placement: Depth (level below → current) / Height (current → level above), like Revit
+- [x] Beam placement: two points, z-Justification Top at level, like Revit
+- [x] Blender structural test: 18 checks (heights, depth, lengths, types, levels, saved IFC)
+- [ ] Beam ends trimmed at column faces (Revit cutback joins)
+- [ ] Interactive tools: click to place (Column / Beam / Grid / Level), Revit ribbon, Properties palette, Project Browser
+- [ ] Grids with Revit bubbles (1, 2, 3 / A, B, C), place columns "At Grids"
+- [ ] Floors, walls, isolated and wall foundations, braces
+
 ## Revit working style: see docs/REVIT_WORKFLOW.md (focus: structure + MEP, US + UK clients)
 
 ## M3: UI shell (weeks 5–18)

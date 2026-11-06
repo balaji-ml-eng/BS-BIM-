@@ -13,11 +13,11 @@ from bsbim_rvt_bridge.backends import BackendError, BackendResult
 
 def sample_model_with_walls(n_walls: int = 3, typed: int = 2):
     """A template project with ``n_walls`` walls on the ground floor; the first ``typed`` get a wall type."""
-    f = project.create_project(project.ProjectSettings(name="Sample"))
+    f = project.create_project(project.ProjectSettings(name="Sample", template="uk_structural"))
     run = ifcopenshell.api.run
     body = ifcopenshell.util.representation.get_context(f, "Model", "Body", "MODEL_VIEW")
     storey = f.by_type("IfcBuildingStorey")[0]
-    wall_type = next(t for t in f.by_type("IfcWallType") if t.Name == "Brick Wall 230")
+    wall_type = next(t for t in f.by_type("IfcWallType") if t.Name == "Concrete 200mm")
     for i in range(n_walls):
         wall = run("root.create_entity", f, ifc_class="IfcWall", name=f"Wall {i}")
         rep = run("geometry.add_wall_representation", f, context=body, length=5.0, height=3.0, thickness=0.254)
