@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+build/
+dist/
+
+# Client / company project files must never go into Git
+test_files/*
+!test_files/README.md
+*.rvt
+*.rfa
+*.rte
+*.rft
+*.naksha.ifc

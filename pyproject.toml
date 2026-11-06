@@ -1,0 +1,18 @@
+[project]
+name = "naksha"
+version = "0.1.0"
+description = "Naksha BIM: Revit-style BIM workflow built on Bonsai and IfcOpenShell"
+requires-python = ">=3.10"
+license = "GPL-3.0-or-later"
+dependencies = ["ifcopenshell>=0.8"]
+
+[project.optional-dependencies]
+rvt = ["rvt>=0.15"]   # rvt-rs reader, Apache-2.0 (see LICENSES.md)
+dev = ["pytest>=8"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src", "."]
+testpaths = ["tests"]

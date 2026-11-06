@@ -1,0 +1,18 @@
+schema_version = "1.0.0"
+
+id = "naksha"
+version = "0.1.0"
+name = "Naksha BIM"
+tagline = "Revit-style BIM workflow built on Bonsai"
+maintainer = "Bala"
+type = "add-on"
+
+tags = ["Object", "Import-Export"]
+
+blender_version_min = "4.2.0"
+
+license = ["SPDX:GPL-3.0-or-later"]
+copyright = ["2026 Bala"]
+
+[permissions]
+files = "Create, open and convert IFC and Revit project files"
