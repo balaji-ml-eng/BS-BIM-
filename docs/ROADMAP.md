@@ -60,7 +60,7 @@ Business model: **Option A**, open-source GPL product. Revenue comes from suppor
 - [x] Real interaction test with simulated mouse/keyboard (tools/ui_interaction_test.py): 18 checks pass
 - [x] Revit-style click selection (tolerant pick, smallest element wins), immediate Delete, own pan/orbit
 - [x] BS BIM screen saved as Blender's start-up layout; Bonsai no longer switches workspaces in Revit mode
-- [ ] Hide Blender's leftover sidebar tabs (Item/Tool/View) and select-mode buttons
+- [x] Drawn Revit-style Properties palette + Project Browser dock (Blender sidebar and select-mode row removed); small stacked ribbon buttons; ribbon tab row, File tab, Quick Access row
 - [ ] Open a Revit file together with its linked point cloud automatically (needs the link path from the RVT)
 - [ ] Interactive (mouse) testing of the click tools by a person
 - [ ] Grids with Revit bubbles (1, 2, 3 / A, B, C), place columns "At Grids"

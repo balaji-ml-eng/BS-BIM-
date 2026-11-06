@@ -207,14 +207,10 @@ def _configure_view3d(window):
         with bpy.context.temp_override(window=window, screen=screen, area=area):
             space.show_region_header = False       # Revit's drawing area has no header row
             space.show_region_toolbar = False      # Revit has no tool strip on the left
-            space.show_region_ui = True            # our sidebar = Properties + Project Browser
+            space.show_region_ui = False           # replaced by the drawn Properties / Project Browser dock
             space.show_region_tool_header = False  # Blender's select-mode row: Revit has none
             space.overlay.show_floor = True
             space.overlay.show_text = False        # no "User Orthographic" text; Revit shows none
-        sidebar = next((r for r in area.regions if r.type == "UI"), None)
-        if sidebar and sidebar.alignment == "RIGHT":
-            with bpy.context.temp_override(window=window, screen=screen, area=area, region=sidebar):
-                bpy.ops.screen.region_flip()
 
 
 def _save_as_startup(window):
@@ -240,81 +236,134 @@ def _save_as_startup(window):
     return None
 
 
-class _RibbonSetup:
-    """Split a ribbon strip off the top of the 3D view, one step per Blender refresh.
+DOCK_WIDTH = 290  # pixels at 100% UI scale: Properties + Project Browser on the left
 
-    Area sizes and positions only update after Blender redraws, so each step re-reads them.
+
+class _RibbonSetup:
+    """Build the BS BIM screen one step per Blender refresh (sizes only update after a redraw):
+
+    1. ribbon strip on top (split, assign, size)
+    2. dock on the left for Properties + Project Browser (split, assign, size)
+    Then the 3D view is configured and the layout is saved as the start-up file.
     """
 
     def __init__(self, window, step: str = "split"):
         self.window = window
         self.step = step
-        self.save_after = step == "split"
+        self.changed = step == "split"
         self.tries = 0
         self.sign = 1
+        self.last_diff = 0
 
     def start(self):
         bpy.app.timers.register(self.tick, first_interval=0.1, persistent=True)
 
-    def _pair(self):
-        screen = self.window.screen
-        areas = [a for a in screen.areas if a.type in ("VIEW_3D", "TEXT_EDITOR")]
-        if len(areas) < 2:
-            return None, None
-        areas.sort(key=lambda a: a.y, reverse=True)  # window y grows upwards: first = top
-        return areas[0], areas[1]
+    # -------------------------------------------------- area lookup
+    def _ribbon(self):
+        eds = [a for a in self.window.screen.areas if a.type == "TEXT_EDITOR"]
+        return min(eds, key=lambda a: a.height) if eds and min(a.height for a in eds) < 200 else None
 
+    def _dock(self):
+        eds = [a for a in self.window.screen.areas if a.type == "TEXT_EDITOR" and a.height >= 200]
+        return min(eds, key=lambda a: a.x) if eds else None
+
+    def _view(self):
+        views = _areas(self.window.screen, "VIEW_3D")
+        return max(views, key=lambda a: a.width * a.height) if views else None
+
+    def _hide_regions(self, area):
+        space = area.spaces.active
+        with bpy.context.temp_override(window=self.window, screen=self.window.screen, area=area):
+            space.show_region_header = False
+            space.show_region_footer = False
+            space.show_region_ui = False
+            space.show_line_numbers = False
+
+    def _move(self, x, y, diff):
+        """Move a shared edge by diff pixels; flips direction if the last move went the wrong way."""
+        if self.tries and abs(diff) >= abs(self.last_diff):
+            self.sign = -self.sign
+        self.last_diff = diff
+        self.tries += 1
+        self.changed = True
+        try:
+            with bpy.context.temp_override(window=self.window, screen=self.window.screen):
+                bpy.ops.screen.area_move(x=int(x), y=int(y), delta=int(self.sign * diff))
+        except RuntimeError:  # screen busy (a menu is open): try again on the next tick
+            pass
+
+    # -------------------------------------------------- steps
     def tick(self):
         from .ribbon_draw import RIBBON_HEIGHT, scale
         w, screen = self.window, self.window.screen
-        target = RIBBON_HEIGHT * scale()
+        s = scale()
         try:
             if self.step == "split":
-                if any(a.type == "TEXT_EDITOR" for a in screen.areas):
+                if self._ribbon() is not None:
                     self.step = "size"
                     return 0.1
-                view = max(_areas(screen, "VIEW_3D"), key=lambda a: a.width * a.height)
-                with bpy.context.temp_override(window=w, screen=screen, area=view):
+                with bpy.context.temp_override(window=w, screen=screen, area=self._view()):
                     bpy.ops.screen.area_split(direction="HORIZONTAL", factor=0.5)
                 self.step = "assign"
                 return 0.1
             if self.step == "assign":
-                top, bottom = self._pair()
-                if top is None:
+                pair = sorted([a for a in screen.areas if a.type == "VIEW_3D"], key=lambda a: a.y, reverse=True)
+                if len(pair) < 2:
                     return 0.1
-                top.type, bottom.type = "TEXT_EDITOR", "VIEW_3D"
-                space = top.spaces.active
-                with bpy.context.temp_override(window=w, screen=screen, area=top):
-                    space.show_region_header = False
-                    space.show_region_footer = False
-                    space.show_region_ui = False
-                    space.show_line_numbers = False
+                top, bottom = pair[0], pair[1]
+                top.type = "TEXT_EDITOR"
+                self._hide_regions(top)
                 self.step = "size"
                 return 0.1
             if self.step == "size":
-                top, _ = self._pair()
-                if top is None or top.type != "TEXT_EDITOR":
+                ribbon = self._ribbon()
+                if ribbon is None:
                     return None
-                diff = top.height - target
-                if abs(diff) <= 3 or self.tries >= 6:
-                    _configure_view3d(w)
-                    print(f"BS BIM: ribbon strip {top.height}px (target {target:.0f})")
-                    if self.save_after or self.tries:  # new or resized layout: keep it for next time
-                        bpy.app.timers.register(lambda: _save_as_startup(w), first_interval=0.5, persistent=True)
-                    return None
-                if self.tries and abs(diff) >= abs(self.last_diff):
-                    self.sign = -self.sign  # the edge moved the wrong way: reverse
-                self.last_diff = diff
-                self.tries += 1
-                try:
-                    with bpy.context.temp_override(window=w, screen=screen, area=top):
-                        bpy.ops.screen.area_move(x=top.x + top.width // 2, y=top.y, delta=int(self.sign * diff))
-                except RuntimeError:  # screen busy (e.g. a menu is open): try again on the next tick
-                    pass
-                return 0.2
+                diff = ribbon.height - RIBBON_HEIGHT * s
+                if abs(diff) > 3 and self.tries < 6:
+                    self._move(ribbon.x + ribbon.width // 2, ribbon.y, diff)
+                    return 0.2
+                print(f"BS BIM: ribbon strip {ribbon.height}px")
+                self.step, self.tries, self.sign = "dock_split", 0, 1
+                return 0.1
+            if self.step == "dock_split":
+                if self._dock() is not None:
+                    self.step = "dock_size"
+                    return 0.1
+                with bpy.context.temp_override(window=w, screen=screen, area=self._view()):
+                    bpy.ops.screen.area_split(direction="VERTICAL", factor=0.5)
+                self.changed = True
+                self.step = "dock_assign"
+                return 0.1
+            if self.step == "dock_assign":
+                views = sorted(_areas(screen, "VIEW_3D"), key=lambda a: a.x)
+                if len(views) < 2:
+                    return 0.1
+                views[0].type = "TEXT_EDITOR"
+                self._hide_regions(views[0])
+                self.step = "dock_size"
+                return 0.1
+            if self.step == "dock_size":
+                dock = self._dock()
+                if dock is None:
+                    return self._finish()
+                diff = dock.width - DOCK_WIDTH * s
+                if abs(diff) > 3 and self.tries < 6:
+                    # the dock's right edge is shared with the 3D view
+                    self._move(dock.x + dock.width, dock.y + dock.height // 2, -diff)
+                    return 0.2
+                print(f"BS BIM: Properties / Project Browser dock {dock.width}px")
+                return self._finish()
         except Exception as e:  # never break Blender's start-up
-            print("BS BIM: ribbon setup stopped:", e)
+            print("BS BIM: screen setup stopped:", e)
             _configure_view3d(w)
+        return None
+
+    def _finish(self):
+        _configure_view3d(self.window)
+        if self.changed:  # new or resized layout: keep it for next time
+            w = self.window
+            bpy.app.timers.register(lambda: _save_as_startup(w), first_interval=0.5, persistent=True)
         return None
 
 

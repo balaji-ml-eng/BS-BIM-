@@ -19,6 +19,7 @@ class Cmd:
     kwargs: dict = field(default_factory=dict)
     tip: str = ""
     dropdown: bool = False             # Revit split button: small arrow under the label
+    small: bool = False                # small button: 16 px icon with the label beside it, stacked 3 high
 
 
 def tool(label: str, icon: str, tool_id: str) -> Cmd:
@@ -68,22 +69,40 @@ TABS: dict[str, list[tuple[str, list[Cmd]]]] = {
         ]),
         ("Work Plane", [Cmd("Ref Plane", "SNAP_GRID")]),
     ],
-    "SYSTEMS": [
+    "SYSTEMS": [  # same buttons and order as Revit 2027's Systems tab
         ("HVAC", [
             tool("Duct", "MOD_FLUIDSIM", "bim.duct_tool"),
-            Cmd("Duct Fitting", "MOD_FLUIDSIM"),
+            Cmd("Duct Placeholder", "MOD_FLUIDSIM"),
+            Cmd("Duct Fitting", "MOD_FLUIDSIM", small=True),
+            Cmd("Duct Accessory", "MOD_FLUIDSIM", small=True),
+            Cmd("Convert to Flex Duct", "MOD_FLUIDSIM", small=True),
+            Cmd("Flex Duct", "MOD_FLUIDSIM"),
             Cmd("Air Terminal", "FORCE_WIND"),
         ]),
-        ("Mechanical", [Cmd("Mechanical Equipment", "MESH_CUBE")]),
+        ("Mechanical", [
+            Cmd("Mechanical Equipment", "MESH_CUBE"),
+            Cmd("Mechanical Control Device", "MESH_CUBE"),
+        ]),
         ("Plumbing & Piping", [
             tool("Pipe", "MESH_CYLINDER", "bim.pipe_tool"),
+            Cmd("Pipe Placeholder", "MESH_CYLINDER"),
+            Cmd("Parallel Pipes", "MESH_CYLINDER"),
+            Cmd("Pipe Fitting", "MESH_CYLINDER", small=True),
+            Cmd("Pipe Accessory", "MESH_CYLINDER", small=True),
+            Cmd("Flex Pipe", "MESH_CYLINDER", small=True),
+            Cmd("Plumbing Equipment", "MATFLUID"),
             tool("Plumbing Fixture", "MATFLUID", "bim.sanitary_terminal_tool"),
             Cmd("Sprinkler", "MOD_OCEAN"),
         ]),
         ("Electrical", [
+            Cmd("Wire", "CURVE_PATH", dropdown=True),
             tool("Cable Tray", "MOD_ARRAY", "bim.cable_carrier_tool"),
             Cmd("Conduit", "CURVE_PATH"),
+            Cmd("Parallel Conduits", "CURVE_PATH"),
+            Cmd("Cable Tray Fitting", "MOD_ARRAY", small=True),
+            Cmd("Conduit Fitting", "CURVE_PATH", small=True),
             tool("Electrical Equipment", "MESH_CUBE", "bim.electric_appliance_tool"),
+            Cmd("Device", "MESH_CUBE", dropdown=True),
             tool("Lighting Fixture", "LIGHT_POINT", "bim.light_fixture_tool"),
         ]),
     ],

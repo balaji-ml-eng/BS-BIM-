@@ -93,6 +93,32 @@ def commands():
     return [c.label for *_, c in bsbim("ribbon_draw")._hit if c.op not in ("bsbim.set_ribbon_tab", "wm.call_menu")]
 
 
+def dock_area():
+    return next((a for a in win().screen.areas if a.type == "TEXT_EDITOR" and a.height >= 200), None)
+
+
+def dock_item(op, **kwargs):
+    """Window coordinates of a clickable item in the drawn Properties / Project Browser dock."""
+    pd = bsbim("palette_draw")
+    region = next(r for r in dock_area().regions if r.type == "WINDOW")
+    for x0, y0, x1, y1, o, kw in pd._hit:
+        if o == op and all(kw.get(k) == v for k, v in kwargs.items()):
+            return region.x + (x0 + min(x1, x0 + 60)) / 2, region.y + (y0 + y1) / 2
+    return None
+
+
+def s_browser_click_level1():
+    check("Properties / Project Browser dock present", dock_area() is not None)
+    pos = dock_item("bsbim.open_view", kind="PLAN", level="Level 1")
+    check("Project Browser lists Level 1", pos is not None, pos)
+    click(*pos)
+
+
+def s_browser_level1_open():
+    check("clicking Level 1 in the Project Browser opens its plan",
+          bpy.context.window_manager.bsbim_active_view == "PLAN:Level 1", bpy.context.window_manager.bsbim_active_view)
+
+
 def s_click_systems_tab():
     click(*ribbon_button("Systems"))
 
@@ -269,6 +295,9 @@ def s_selected():
     print("modal operators before select:", [op.bl_idname for op in win().modal_operators], flush=True)
     sel = bpy.context.selected_objects
     check("clicking a column selects it", state["col_obj"] in sel, [o.name for o in sel])
+    header = bsbim("palette_draw").properties_model(bpy.context)[0]
+    check("Properties shows the column type", (header["family"], header["type"]) == ("W Shapes-Column", "W10x33"),
+          (header["family"], header["type"]))
     labels = commands()
     check("ribbon switches to Modify tab", "Delete" in labels and "Move" in labels, labels)
     shot("ix_column_selected.png")
@@ -290,7 +319,7 @@ def s_quit():
     bpy.ops.wm.quit_blender()
 
 
-plan = [s_wait_ribbon, s_load, s_wait_after_load, s_click_systems_tab, s_systems_shown, s_structure_back, s_plan, s_click_column_button, s_column_tool_running,
+plan = [s_wait_ribbon, s_load, s_wait_after_load, s_browser_click_level1, s_browser_level1_open, s_click_systems_tab, s_systems_shown, s_structure_back, s_plan, s_click_column_button, s_column_tool_running,
         s_columns_placed, s_beam_button, s_beam_clicks, s_beam_placed, s_shortcut_cl, s_shortcut_second_key, s_shortcut_click,
         s_shortcut_done, s_pan_checked, s_click_column, s_selected, s_deleted, s_quit]
 tries = {"n": 0}

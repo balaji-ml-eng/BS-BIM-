@@ -299,6 +299,25 @@ def _draw_tabs(context, w, h, s):
         _draw("LINES", [(0, y0), (w, y0)], TAB_EDGE)
 
 
+def _draw_small_stack(stack, x, panel_top, s, font_size) -> float:
+    """A column of small buttons: 16 px icon with the label to its right, like Revit."""
+    row_h = 22 * s
+    icon = 16 * s
+    width = max(text_width(c.label, font_size) for c in stack) + icon + 14 * s
+    y_top = panel_top - 6 * s
+    for c in stack:
+        y1, y0 = y_top, y_top - row_h
+        enabled = bool(c.op)
+        if enabled and x <= _hover["x"] <= x + width and y0 <= _hover["y"] <= y1:
+            rect(x, y0, x + width, y1, HOVER)
+            outline(x, y0, x + width, y1, HOVER_EDGE)
+        draw_icon(c.label, x + 3 * s, y0 + (row_h - icon) / 2, icon, enabled)
+        text(x + icon + 8 * s, y0 + 6 * s, c.label, font_size, TEXT if enabled else TEXT_DISABLED)
+        _hit.append((x, y0, x + width, y1, c))
+        y_top = y0
+    return x + width + 2 * s
+
+
 def draw_ribbon():
     context = bpy.context
     area = context.area
@@ -322,7 +341,17 @@ def draw_ribbon():
     x = 3 * s
     for title, cmds in current_panels(context):
         panel_x0 = x
-        for c in cmds:
+        i = 0
+        while i < len(cmds):
+            if cmds[i].small:  # Revit stacks up to 3 small buttons in one column
+                stack = []
+                while i < len(cmds) and cmds[i].small and len(stack) < 3:
+                    stack.append(cmds[i])
+                    i += 1
+                x = _draw_small_stack(stack, x, panel_top, s, font_size)
+                continue
+            c = cmds[i]
+            i += 1
             lines = _wrap(c.label, font_size, 60 * s)
             bw = max(max(text_width(l, font_size) for l in lines) + 2 * pad, icon + 2 * pad)
             x0, x1 = x, x + bw
@@ -377,6 +406,10 @@ class BSBIM_OT_ribbon_click(bpy.types.Operator):
     bl_options = {"INTERNAL"}
 
     def invoke(self, context, event):
+        from . import palette_draw
+        if palette_draw.is_palette_area(context.area):
+            palette_draw.click(context, event.mouse_region_x, event.mouse_region_y)
+            return {"FINISHED"}
         if not is_ribbon_area(context.area):
             return {"PASS_THROUGH"}
         c = hit(event.mouse_region_x, event.mouse_region_y)
@@ -397,10 +430,29 @@ class BSBIM_OT_ribbon_hover(bpy.types.Operator):
     bl_options = {"INTERNAL"}
 
     def invoke(self, context, event):
+        from . import palette_draw
         if is_ribbon_area(context.area):
             _hover["x"], _hover["y"] = event.mouse_region_x, event.mouse_region_y
             context.area.tag_redraw()
+        elif palette_draw.is_palette_area(context.area):
+            palette_draw.hover(event.mouse_region_x, event.mouse_region_y)
+            context.area.tag_redraw()
         return {"PASS_THROUGH"}
+
+
+class BSBIM_OT_palette_scroll(bpy.types.Operator):
+    bl_idname = "bsbim.palette_scroll"
+    bl_label = "Scroll"
+    bl_options = {"INTERNAL"}
+    steps: bpy.props.IntProperty(default=1)
+
+    def invoke(self, context, event):
+        from . import palette_draw
+        if not palette_draw.is_palette_area(context.area):
+            return {"PASS_THROUGH"}
+        palette_draw.scroll(event.mouse_region_y, self.steps)
+        context.area.tag_redraw()
+        return {"FINISHED"}
 
 
 class BSBIM_OT_ribbon_modify(bpy.types.Operator):
@@ -421,14 +473,14 @@ class BSBIM_OT_ribbon_modify(bpy.types.Operator):
 
 @bpy.app.handlers.persistent
 def redraw_ribbon(*_args):
-    """Selection changes switch the ribbon to the Modify tab, so redraw it."""
+    """Selection changes switch the ribbon to the Modify tab and change Properties: redraw both."""
     for window in bpy.context.window_manager.windows:
         for area in window.screen.areas:
             if area.type == "TEXT_EDITOR":
                 area.tag_redraw()
 
 
-classes = (BSBIM_OT_ribbon_click, BSBIM_OT_ribbon_hover, BSBIM_OT_ribbon_modify)
+classes = (BSBIM_OT_ribbon_click, BSBIM_OT_ribbon_hover, BSBIM_OT_ribbon_modify, BSBIM_OT_palette_scroll)
 
 _handle = None
 _keymaps: list = []
@@ -444,6 +496,10 @@ def register():
         km = kc.keymaps.new(name="Text", space_type="TEXT_EDITOR")
         _keymaps.append((km, km.keymap_items.new("bsbim.ribbon_click", "LEFTMOUSE", "PRESS")))
         _keymaps.append((km, km.keymap_items.new("bsbim.ribbon_hover", "MOUSEMOVE", "ANY")))
+        for event, steps in (("WHEELUPMOUSE", -1), ("WHEELDOWNMOUSE", 1)):
+            kmi = km.keymap_items.new("bsbim.palette_scroll", event, "PRESS")
+            kmi.properties.steps = steps
+            _keymaps.append((km, kmi))
 
 
 def unregister():

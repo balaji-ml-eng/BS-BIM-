@@ -8,7 +8,7 @@ Business logic lives in bsbim_core (vendored into the built extension by tools/b
 import bpy
 from bpy.app.handlers import persistent
 
-from . import browser, keymap, operators, palette, pointcloud, prefs, revit_ui, ribbon_draw, state, tools, ui
+from . import browser, keymap, operators, palette, palette_draw, pointcloud, prefs, revit_ui, ribbon_draw, state, tools, ui
 
 _classes = (
     prefs.BsbimPreferences,
@@ -99,6 +99,7 @@ def register():
     revit_ui.install_headers()
     keymap.register_keymaps()
     ribbon_draw.register()
+    palette_draw.register()
     if not bpy.app.background:
         bpy.context.preferences.inputs.use_zoom_to_mouse = True  # Revit zooms at the cursor
         bpy.app.timers.register(_setup_screen, first_interval=0.5, persistent=True)
@@ -113,6 +114,7 @@ def unregister():
         bpy.app.timers.unregister(_keep_bsbim_screen)
     keymap.unregister_keymaps()
     ribbon_draw.unregister()
+    palette_draw.unregister()
     pointcloud.unregister()
     tools.unregister_draw_handler()
     revit_ui.uninstall_headers()
