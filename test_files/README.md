@@ -12,5 +12,5 @@ A good test set:
 Run the benchmark:
 
 ```powershell
-.venv\Scripts\python -m naksha_rvt_bridge batch test_files -o build\rvt_benchmark
+.venv\Scripts\python -m bsbim_rvt_bridge batch test_files -o build\rvt_benchmark
 ```

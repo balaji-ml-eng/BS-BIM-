@@ -1,4 +1,4 @@
-"""Create new Naksha projects from the company template."""
+"""Create new BS BIM projects from the company template."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from . import template
 
 @dataclass
 class ProjectSettings:
-    name: str = "Naksha Project"
+    name: str = "BS BIM Project"
     site_name: str = "Site"
     building_name: str = "Building"
     levels: list[tuple[str, float]] = field(default_factory=lambda: list(template.DEFAULT_LEVELS))

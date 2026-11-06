@@ -1,8 +1,8 @@
 schema_version = "1.0.0"
 
-id = "naksha"
+id = "bsbim"
 version = "0.1.0"
-name = "Naksha BIM"
+name = "BS BIM"
 tagline = "Revit-style BIM workflow built on Bonsai"
 maintainer = "Bala"
 type = "add-on"

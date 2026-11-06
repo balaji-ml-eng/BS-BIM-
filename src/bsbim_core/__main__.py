@@ -1,4 +1,4 @@
-"""Command line: python -m naksha_core new-project | report"""
+"""Command line: python -m bsbim_core new-project | report"""
 
 from __future__ import annotations
 
@@ -12,12 +12,12 @@ from . import project, report
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="naksha_core", description="Naksha core tools")
+    parser = argparse.ArgumentParser(prog="bsbim_core", description="BS BIM core tools")
     sub = parser.add_subparsers(dest="command", required=True)
 
     p_new = sub.add_parser("new-project", help="Create a new project IFC from the company template")
     p_new.add_argument("output", help="Output .ifc path")
-    p_new.add_argument("--name", default="Naksha Project")
+    p_new.add_argument("--name", default="BS BIM Project")
     p_new.add_argument("--floors", type=int, default=2, help="Number of floors above ground, including ground")
     p_new.add_argument("--floor-height", type=float, default=3000.0, help="Floor-to-floor height in mm")
     p_new.add_argument("--no-types", action="store_true", help="Do not add template wall/slab types")

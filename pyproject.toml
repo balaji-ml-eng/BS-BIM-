@@ -1,7 +1,7 @@
 [project]
-name = "naksha"
+name = "bs-bim"
 version = "0.1.0"
-description = "Naksha BIM: Revit-style BIM workflow built on Bonsai and IfcOpenShell"
+description = "BS BIM: Revit-style BIM workflow built on Bonsai and IfcOpenShell"
 requires-python = ">=3.10"
 license = "GPL-3.0-or-later"
 dependencies = ["ifcopenshell>=0.8"]

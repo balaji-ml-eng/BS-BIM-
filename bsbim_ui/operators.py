@@ -7,8 +7,8 @@ import bpy
 from bpy_extras.io_utils import ExportHelper, ImportHelper
 
 from . import bridge_client, prefs
-from .naksha_core import project as core_project
-from .naksha_core import report as core_report
+from .bsbim_core import project as core_project
+from .bsbim_core import report as core_report
 
 # Lines of the last model report, drawn by the panel.
 last_report: list[str] = []
@@ -35,11 +35,11 @@ def _set_report(lines: list[str]) -> None:
         area.tag_redraw()
 
 
-class NAKSHA_OT_new_project(bpy.types.Operator, ExportHelper):
-    """Create a new project from the Naksha company template and open it"""
+class BSBIM_OT_new_project(bpy.types.Operator, ExportHelper):
+    """Create a new project from the BS BIM company template and open it"""
 
-    bl_idname = "naksha.new_project"
-    bl_label = "New Naksha Project"
+    bl_idname = "bsbim.new_project"
+    bl_label = "New BS BIM Project"
     bl_options = {"REGISTER"}
 
     filename_ext = ".ifc"
@@ -64,10 +64,10 @@ class NAKSHA_OT_new_project(bpy.types.Operator, ExportHelper):
         return {"FINISHED"}
 
 
-class NAKSHA_OT_import_rvt(bpy.types.Operator, ImportHelper):
-    """Convert a Revit file to IFC with the Naksha RVT Bridge and open it"""
+class BSBIM_OT_import_rvt(bpy.types.Operator, ImportHelper):
+    """Convert a Revit file to IFC with the BS BIM RVT Bridge and open it"""
 
-    bl_idname = "naksha.import_rvt"
+    bl_idname = "bsbim.import_rvt"
     bl_label = "Open Revit File"
     bl_options = {"REGISTER"}
 
@@ -99,7 +99,7 @@ class NAKSHA_OT_import_rvt(bpy.types.Operator, ImportHelper):
             return {"PASS_THROUGH"}
         if not self._job.finished():
             context.workspace.status_text_set(
-                f"Naksha: converting {self._job.source.name}... {time.monotonic() - self._started:.0f}s")
+                f"BS BIM: converting {self._job.source.name}... {time.monotonic() - self._started:.0f}s")
             return {"PASS_THROUGH"}
         context.window_manager.event_timer_remove(self._timer)
         context.workspace.status_text_set(None)
@@ -125,10 +125,10 @@ class NAKSHA_OT_import_rvt(bpy.types.Operator, ImportHelper):
         return {"FINISHED"}
 
 
-class NAKSHA_OT_model_report(bpy.types.Operator):
+class BSBIM_OT_model_report(bpy.types.Operator):
     """Check how complete the BIM data in the open project is"""
 
-    bl_idname = "naksha.model_report"
+    bl_idname = "bsbim.model_report"
     bl_label = "Model Quality Report"
 
     def execute(self, context):
@@ -148,8 +148,8 @@ class NAKSHA_OT_model_report(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class NAKSHA_OT_clear_report(bpy.types.Operator):
-    bl_idname = "naksha.clear_report"
+class BSBIM_OT_clear_report(bpy.types.Operator):
+    bl_idname = "bsbim.clear_report"
     bl_label = "Clear Report"
 
     def execute(self, context):
@@ -157,4 +157,4 @@ class NAKSHA_OT_clear_report(bpy.types.Operator):
         return {"FINISHED"}
 
 
-classes = (NAKSHA_OT_new_project, NAKSHA_OT_import_rvt, NAKSHA_OT_model_report, NAKSHA_OT_clear_report)
+classes = (BSBIM_OT_new_project, BSBIM_OT_import_rvt, BSBIM_OT_model_report, BSBIM_OT_clear_report)

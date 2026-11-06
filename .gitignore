@@ -12,4 +12,4 @@ test_files/*
 *.rfa
 *.rte
 *.rft
-*.naksha.ifc
+*.bsbim.ifc

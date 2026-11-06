@@ -1,4 +1,4 @@
-"""Naksha core: BIM engine logic built only on IfcOpenShell.
+"""BS BIM core: BIM engine logic built only on IfcOpenShell.
 
 Rule: nothing in this package may import ``bpy`` or ``bonsai``. Keeping the
 core independent of Blender and Bonsai means it can run in the command-line

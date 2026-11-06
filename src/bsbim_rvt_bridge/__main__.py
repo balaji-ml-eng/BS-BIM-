@@ -1,9 +1,9 @@
 """Command line for the RVT Bridge.
 
-    python -m naksha_rvt_bridge backends
-    python -m naksha_rvt_bridge info FILE.rvt [--json] [--redact]
-    python -m naksha_rvt_bridge convert FILE.rvt [-o OUT.ifc] [--mode auto] [--report R.json] [--json]
-    python -m naksha_rvt_bridge batch FOLDER -o OUT_DIR
+    python -m bsbim_rvt_bridge backends
+    python -m bsbim_rvt_bridge info FILE.rvt [--json] [--redact]
+    python -m bsbim_rvt_bridge convert FILE.rvt [-o OUT.ifc] [--mode auto] [--report R.json] [--json]
+    python -m bsbim_rvt_bridge batch FOLDER -o OUT_DIR
 
 Exit codes: 0 ok, 1 conversion/read error, 2 bad arguments.
 """
@@ -14,7 +14,7 @@ import argparse
 import json
 import sys
 
-from naksha_core.report import format_report
+from bsbim_core.report import format_report
 
 from . import __version__
 from .backends import BackendError, all_backends
@@ -23,7 +23,7 @@ from .convert import batch, convert, info
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="naksha_rvt_bridge", description=f"Naksha RVT Bridge {__version__}")
+    parser = argparse.ArgumentParser(prog="bsbim_rvt_bridge", description=f"BS BIM RVT Bridge {__version__}")
     parser.add_argument("--backend", help="Backend name (default: first available)")
     sub = parser.add_subparsers(dest="command", required=True)
 

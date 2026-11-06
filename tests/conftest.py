@@ -6,9 +6,9 @@ import ifcopenshell.api
 import ifcopenshell.util.representation
 import pytest
 
-from naksha_core import project
-from naksha_rvt_bridge import backends
-from naksha_rvt_bridge.backends import BackendError, BackendResult
+from bsbim_core import project
+from bsbim_rvt_bridge import backends
+from bsbim_rvt_bridge.backends import BackendError, BackendResult
 
 
 def sample_model_with_walls(n_walls: int = 3, typed: int = 2):

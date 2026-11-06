@@ -41,10 +41,10 @@ class BridgeJob:
 
 def start(python: str, src: str, source: Path, output_folder: str = "") -> BridgeJob:
     if not python or not Path(python).is_file():
-        raise BridgeError("Set 'Bridge Python' in Naksha preferences (Edit > Preferences > Add-ons > Naksha BIM)")
+        raise BridgeError("Set 'Bridge Python' in BS BIM preferences (Edit > Preferences > Add-ons > BS BIM)")
     out_dir = Path(output_folder) if output_folder else source.parent
-    output = out_dir / (source.stem + ".naksha.ifc")
-    work = Path(tempfile.mkdtemp(prefix="naksha_bridge_"))
+    output = out_dir / (source.stem + ".bsbim.ifc")
+    work = Path(tempfile.mkdtemp(prefix="bsbim_bridge_"))
     report, log = work / "report.json", work / "bridge.log"
 
     env = dict(os.environ)
@@ -54,7 +54,7 @@ def start(python: str, src: str, source: Path, output_folder: str = "") -> Bridg
     for var in ("PYTHONHOME", "PYTHONNOUSERSITE"):
         env.pop(var, None)
 
-    cmd = [python, "-m", "naksha_rvt_bridge", "convert", str(source), "-o", str(output), "--report", str(report)]
+    cmd = [python, "-m", "bsbim_rvt_bridge", "convert", str(source), "-o", str(output), "--report", str(report)]
     flags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
     with open(log, "w", encoding="utf-8") as log_fh:
         proc = subprocess.Popen(cmd, stdout=log_fh, stderr=subprocess.STDOUT, env=env, creationflags=flags)

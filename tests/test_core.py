@@ -5,8 +5,8 @@ import ifcopenshell.util.element as E
 import ifcopenshell.util.unit
 import pytest
 
-from naksha_core import project, report, template
-from naksha_core.__main__ import main as core_main
+from bsbim_core import project, report, template
+from bsbim_core.__main__ import main as core_main
 
 from .conftest import sample_model_with_walls
 

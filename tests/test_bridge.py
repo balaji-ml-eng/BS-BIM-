@@ -5,10 +5,10 @@ import json
 
 import pytest
 
-from naksha_rvt_bridge import backends, convert as conv
-from naksha_rvt_bridge.__main__ import main as bridge_main
-from naksha_rvt_bridge.backends import BackendError
-from naksha_rvt_bridge.backends.rvt_rs import RvtRsBackend
+from bsbim_rvt_bridge import backends, convert as conv
+from bsbim_rvt_bridge.__main__ import main as bridge_main
+from bsbim_rvt_bridge.backends import BackendError
+from bsbim_rvt_bridge.backends.rvt_rs import RvtRsBackend
 
 from .conftest import FakeBackend
 
@@ -16,7 +16,7 @@ from .conftest import FakeBackend
 def test_convert_writes_ifc_and_report(fake_backend, rvt_file, tmp_path):
     report_path = tmp_path / "r.json"
     r = conv.convert(rvt_file, report_path=report_path)
-    assert r.ifc_path == rvt_file.with_name("House.naksha.ifc") and r.ifc_path.is_file()
+    assert r.ifc_path == rvt_file.with_name("House.bsbim.ifc") and r.ifc_path.is_file()
     assert (r.backend, r.mode_used) == ("fake", "geometry")
     assert r.report.total_elements == 3
     assert r.revit_info["username"] is None  # bridge always redacts personal info in reports

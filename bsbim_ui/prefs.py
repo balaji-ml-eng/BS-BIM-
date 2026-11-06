@@ -16,18 +16,18 @@ def _dev_default(key: str) -> str:
         return ""
 
 
-class NakshaPreferences(bpy.types.AddonPreferences):
+class BsbimPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
 
     bridge_python: bpy.props.StringProperty(
         name="Bridge Python",
-        description="python.exe that has naksha_rvt_bridge and the 'rvt' reader installed",
+        description="python.exe that has bsbim_rvt_bridge and the 'rvt' reader installed",
         subtype="FILE_PATH",
         default=_dev_default("python"),
     )
     bridge_src: bpy.props.StringProperty(
         name="Bridge source folder",
-        description="Folder containing naksha_rvt_bridge and naksha_core (added to PYTHONPATH). Leave empty if installed",
+        description="Folder containing bsbim_rvt_bridge and bsbim_core (added to PYTHONPATH). Leave empty if installed",
         subtype="DIR_PATH",
         default=_dev_default("src"),
     )
@@ -46,6 +46,6 @@ class NakshaPreferences(bpy.types.AddonPreferences):
         col.prop(self, "output_folder")
 
 
-def get(context=None) -> NakshaPreferences:
+def get(context=None) -> BsbimPreferences:
     context = context or bpy.context
     return context.preferences.addons[__package__].preferences

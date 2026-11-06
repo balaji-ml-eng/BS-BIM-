@@ -5,7 +5,7 @@ from __future__ import annotations
 from .base import Backend, BackendError, BackendResult
 from .rvt_rs import RvtRsBackend
 
-# Planned: rvt-open (Apache-2.0), RvtIO CLI (MIT), Naksha Revit add-in (official Revit API).
+# Planned: rvt-open (Apache-2.0), RvtIO CLI (MIT), BS BIM Revit add-in (official Revit API).
 _BACKENDS: list[Backend] = [RvtRsBackend()]
 
 

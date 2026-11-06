@@ -1,4 +1,4 @@
-"""Convert Revit files to IFC and measure the result with the Naksha quality report."""
+"""Convert Revit files to IFC and measure the result with the BS BIM quality report."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from typing import Any
 
 import ifcopenshell
 
-from naksha_core.report import ModelReport, build_report
+from bsbim_core.report import ModelReport, build_report
 
 from . import REVIT_SUFFIXES
 from .backends import BackendError, pick
@@ -55,7 +55,7 @@ def check_input(path: str | Path) -> Path:
 
 
 def default_output(source: Path) -> Path:
-    return source.with_name(source.stem + ".naksha.ifc")
+    return source.with_name(source.stem + ".bsbim.ifc")
 
 
 def info(path: str | Path, backend: str | None = None, redact: bool = False) -> dict[str, Any]:

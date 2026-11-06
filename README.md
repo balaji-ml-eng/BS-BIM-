@@ -1,19 +1,19 @@
-# Naksha BIM
+# BS BIM
 
 A Revit-style BIM application built on **Blender + Bonsai + IfcOpenShell**, working natively in IFC, with an RVT Bridge to open Revit files.
 
-> "Naksha" is a working name. The final product name will be decided later.
+> BS BIM: an open BIM platform by Balaji. Repository: https://github.com/balaji-ml-eng/BS-BIM-
 
 ## Repository layout
 
 ```
-src/naksha_core/        Engine: pure Python + IfcOpenShell. NO bpy/bonsai imports.
+src/bsbim_core/        Engine: pure Python + IfcOpenShell. NO bpy/bonsai imports.
                         project.py  new projects from the company template
                         template.py levels, Indian-standard materials, wall/slab types
                         report.py   model quality report (0-100 score)
-src/naksha_rvt_bridge/  Separate program: Revit (.rvt/.rfa) -> IFC
+src/bsbim_rvt_bridge/  Separate program: Revit (.rvt/.rfa) -> IFC
                         backends/   pluggable readers (rvt-rs now; rvt-open, RvtIO, Revit add-in later)
-naksha_ui/              Blender extension (thin UI layer): panel, menu, operators
+bsbim_ui/              Blender extension (thin UI layer): panel, menu, operators
 tools/                  build_extension.py, blender_smoke_test.py
 tests/                  pytest suite
 docs/                   ROADMAP.md, ARCHITECTURE.md
@@ -43,22 +43,22 @@ py -3.10 -m venv .venv
 & "H:\Bala Data\Tools\blender-5.1.2-windows-x64\blender.exe" -b --python tools\blender_smoke_test.py
 
 # Core tools (set PYTHONPATH=src first: $env:PYTHONPATH="src")
-.venv\Scripts\python -m naksha_core new-project out.ifc --name "My House" --floors 3
-.venv\Scripts\python -m naksha_core report out.ifc
+.venv\Scripts\python -m bsbim_core new-project out.ifc --name "My House" --floors 3
+.venv\Scripts\python -m bsbim_core report out.ifc
 
 # RVT Bridge
-.venv\Scripts\python -m naksha_rvt_bridge backends
-.venv\Scripts\python -m naksha_rvt_bridge info  test_files\House.rvt
-.venv\Scripts\python -m naksha_rvt_bridge convert test_files\House.rvt --report house.json
-.venv\Scripts\python -m naksha_rvt_bridge batch test_files -o build\rvt_benchmark
+.venv\Scripts\python -m bsbim_rvt_bridge backends
+.venv\Scripts\python -m bsbim_rvt_bridge info  test_files\House.rvt
+.venv\Scripts\python -m bsbim_rvt_bridge convert test_files\House.rvt --report house.json
+.venv\Scripts\python -m bsbim_rvt_bridge batch test_files -o build\rvt_benchmark
 ```
 
 `batch` writes `summary.csv`: one row per Revit file, with element counts and the share that came through with geometry, type, material, properties and storey. That is our RVT quality benchmark.
 
 ## In Blender
 
-Open the sidebar (press `N`) and choose the **Naksha** tab, or use the **Naksha** menu in the top bar:
-- **New Naksha Project**: company template with floors, Indian-standard wall and slab types
+Open the sidebar (press `N`) and choose the **BS BIM** tab, or use the **BS BIM** menu in the top bar:
+- **New BS BIM Project**: company template with floors, Indian-standard wall and slab types
 - **Open Revit File**: converts through the RVT Bridge, then opens in Bonsai
 - **Model Quality Report**: shows how complete the BIM data is
 

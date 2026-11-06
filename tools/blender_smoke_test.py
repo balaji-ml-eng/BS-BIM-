@@ -1,4 +1,4 @@
-"""Headless check that the installed Naksha extension works with Bonsai.
+"""Headless check that the installed BS BIM extension works with Bonsai.
 
     blender.exe -b --python tools/blender_smoke_test.py -- <work_dir>
 
@@ -24,14 +24,14 @@ def check(name, condition, detail=""):
 
 try:
     addons = bpy.context.preferences.addons.keys()
-    naksha_key = next((k for k in addons if k.endswith(".naksha")), None)
-    check("naksha enabled", naksha_key, naksha_key or list(addons))
+    bsbim_key = next((k for k in addons if k.endswith(".bsbim")), None)
+    check("bsbim enabled", bsbim_key, bsbim_key or list(addons))
     check("bonsai enabled", any(k.endswith("bonsai") for k in addons))
 
     import bonsai.tool as tool
 
     ifc_path = work / "smoke_project.ifc"
-    res = bpy.ops.naksha.new_project(filepath=str(ifc_path), project_name="Smoke", floors=3, floor_height=3200)
+    res = bpy.ops.bsbim.new_project(filepath=str(ifc_path), project_name="Smoke", floors=3, floor_height=3200)
     check("new_project finished", res == {"FINISHED"}, res)
     check("ifc written", ifc_path.is_file())
     f = tool.Ifc.get()
@@ -41,15 +41,15 @@ try:
     check("template types", len(f.by_type("IfcElementType")) == 7)
     check("blender objects created", len(bpy.data.objects) > 0, f"{len(bpy.data.objects)} objects")
 
-    res = bpy.ops.naksha.model_report()
+    res = bpy.ops.bsbim.model_report()
     from importlib import import_module
-    ops_mod = import_module(naksha_key + ".operators")
+    ops_mod = import_module(bsbim_key + ".operators")
     check("model_report", res == {"FINISHED"} and any("Quality score" in l for l in ops_mod.last_report))
 
     fake_rvt = work / "not_revit.rvt"
     fake_rvt.write_bytes(b"this is not a revit file")
     try:  # in background mode Blender raises operator ERROR reports as RuntimeError
-        res = bpy.ops.naksha.import_rvt(filepath=str(fake_rvt))
+        res = bpy.ops.bsbim.import_rvt(filepath=str(fake_rvt))
     except RuntimeError:
         res = {"CANCELLED"}
     msg = " | ".join(ops_mod.last_report)

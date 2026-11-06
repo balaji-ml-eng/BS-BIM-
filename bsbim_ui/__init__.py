@@ -1,14 +1,14 @@
-"""Naksha BIM: Blender extension (UI layer).
+"""BS BIM: Blender extension (UI layer).
 
 This package is the thin GPL user-interface layer. Business logic lives in
-naksha_core (vendored into the built extension by tools/build_extension.py).
+bsbim_core (vendored into the built extension by tools/build_extension.py).
 """
 
 import bpy
 
 from . import operators, prefs, ui
 
-_classes = (prefs.NakshaPreferences, *operators.classes, *ui.classes)
+_classes = (prefs.BsbimPreferences, *operators.classes, *ui.classes)
 
 
 def register():
