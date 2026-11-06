@@ -4,7 +4,7 @@ id = "bsbim"
 version = "0.1.0"
 name = "BS BIM"
 tagline = "Revit-style BIM workflow built on Bonsai"
-maintainer = "Bala"
+maintainer = "Balaji K (balaji-ml-eng)"
 type = "add-on"
 
 tags = ["Object", "Import-Export"]
@@ -12,7 +12,7 @@ tags = ["Object", "Import-Export"]
 blender_version_min = "4.2.0"
 
 license = ["SPDX:GPL-3.0-or-later"]
-copyright = ["2026 Bala"]
+copyright = ["2026 Balaji K"]
 
 [permissions]
 files = "Create, open and convert IFC and Revit project files"
