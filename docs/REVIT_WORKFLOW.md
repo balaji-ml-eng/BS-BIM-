@@ -42,6 +42,16 @@ Status key: ✅ Bonsai already has the engine · 🔧 we wrap Bonsai in Revit-st
 
 ## 3. Ribbon (focused on structure and MEP)
 
+**Reference: Revit 2027.3, observed on 2026-11-06** (screenshots kept locally in `H:\Bala Data\BSBIM_Reference`, never in Git):
+- Tab order: File · Architecture · **Structure** · Concrete · Steel · **Systems** · Insert · Annotate · Analyze · Massing & Site · Collaborate · View · Manage · Add-Ins · Modify
+- **Structure** tab panels, left to right: Select (Modify) | **Structure**: Beam, Wall, Column, Floor, Truss, Brace, Beam System | **Connection**: Connection, Connection Automation | **Foundation**: Isolated, Wall, Slab | **Model**: Component, Model Text, Model Line, Model Group | **Opening**: By Face, Shaft, Wall, Vertical, Dormer | **Datum**: Level, Grid | **Work Plane**: Set, Show, Ref Plane, Viewer
+- **Systems** tab panels: Select (Modify) | **HVAC**: Duct, Duct Placeholder, Duct Fitting, Duct Accessory, Convert to Flex Duct, Flex Duct, Air Terminal | **Fabrication**: Fabrication Part, Multi-Point Routing | **MEP Detailing** | **P&ID Collaboration** | **Mechanical**: Mechanical Equipment, Mechanical Control Device | **Plumbing & Piping**: Pipe, Pipe Placeholder, Parallel Pipes, Plumbing Equipment, Plumbing Fixture, Sprinkler | **Electrical**: Wire, Cable Tray, Conduit, Parallel Conduits, Electrical Equipment, Device, Lighting Fixture | **Model**: Component | **Work Plane**
+- Status bar idle text: "Click to select, TAB for alternates, CTRL adds, SHIFT unselects."
+- Project Browser groups (structural sample): Views (all) → Structural Plans, 3D Views, Elevations (Building Elevation), Sections (Building Section), Detail Views (Detail), Renderings, ... Legends, Schedules/Quantities, Sheets, Families, Groups, Revit Links
+
+BS BIM copies this **panel order and naming** exactly for the Structure and Systems tabs.
+
+
 | Tab | Panel → commands | Engine |
 |---|---|---|
 | **Structure** | Structure: Beam, Wall, Column, Floor, Truss, Brace, Beam System · Foundation: Isolated, Wall, Slab · Reinforcement (later) · Datum: Level, Grid · Work Plane: Ref Plane | ✅ beam, column, member, wall, slab, footing, pile tools 🔧 |
