@@ -121,6 +121,18 @@ def uninstall_headers():
     _original_draws.clear()
 
 
+# ---------------------------------------------------------------- Bonsai's own workspace
+def set_bonsai_workspace_switching(enabled: bool) -> None:
+    """Bonsai switches to its "BIM" workspace whenever a project opens. In Revit mode BS BIM owns
+    the screen, so that is turned off; Blender mode turns it back on."""
+    for key, addon in bpy.context.preferences.addons.items():
+        if key.endswith("bonsai") and addon.preferences is not None:
+            prefs = addon.preferences
+            for name in ("should_setup_workspace", "activate_workspace"):
+                if hasattr(prefs, name):
+                    setattr(prefs, name, enabled)
+
+
 # ---------------------------------------------------------------- screen layout
 def _areas(screen, kind):
     return [a for a in screen.areas if a.type == kind]
@@ -192,6 +204,29 @@ def _configure_view3d(window):
                 bpy.ops.screen.region_flip()
 
 
+def _save_as_startup(window):
+    """Save the finished BS BIM screen as Blender's start-up file (portable/config/startup.blend).
+
+    Bonsai reloads the start-up file whenever it opens a project; with the BS BIM screen saved in it,
+    nothing has to be rearranged at run time any more. Only done on a clean scene.
+    """
+    try:
+        import bonsai.tool as tool
+        if tool.Ifc.get() is not None:
+            return None
+    except ImportError:
+        pass
+    if any(o for o in bpy.data.objects):
+        return None
+    try:
+        with bpy.context.temp_override(window=window, screen=window.screen):
+            bpy.ops.wm.save_homefile()
+        print("BS BIM: Revit-style screen saved as the start-up layout")
+    except RuntimeError as e:
+        print("BS BIM: could not save the start-up layout:", e)
+    return None
+
+
 class _RibbonSetup:
     """Split a ribbon strip off the top of the 3D view, one step per Blender refresh.
 
@@ -248,14 +283,18 @@ class _RibbonSetup:
                 if abs(diff) <= 3 or self.tries >= 6:
                     _configure_view3d(w)
                     print(f"BS BIM: ribbon strip {top.height}px (target {target:.0f})")
+                    bpy.app.timers.register(lambda: _save_as_startup(w), first_interval=0.5, persistent=True)
                     return None
                 if self.tries and abs(diff) >= abs(self.last_diff):
                     self.sign = -self.sign  # the edge moved the wrong way: reverse
                 self.last_diff = diff
                 self.tries += 1
-                with bpy.context.temp_override(window=w, screen=screen, area=top):
-                    bpy.ops.screen.area_move(x=top.x + top.width // 2, y=top.y, delta=int(self.sign * diff))
-                return 0.1
+                try:
+                    with bpy.context.temp_override(window=w, screen=screen, area=top):
+                        bpy.ops.screen.area_move(x=top.x + top.width // 2, y=top.y, delta=int(self.sign * diff))
+                except RuntimeError:  # screen busy (e.g. a menu is open): try again on the next tick
+                    pass
+                return 0.2
         except Exception as e:  # never break Blender's start-up
             print("BS BIM: ribbon setup stopped:", e)
             _configure_view3d(w)
@@ -320,6 +359,7 @@ class BSBIM_OT_toggle_revit_ui(bpy.types.Operator):
     def execute(self, context):
         wm = context.window_manager
         wm.bsbim_revit_ui = not wm.bsbim_revit_ui
+        set_bonsai_workspace_switching(not wm.bsbim_revit_ui)
         if wm.bsbim_revit_ui:
             self.report({"INFO"}, setup_layout(context.window))
             apply_revit_theme()

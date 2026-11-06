@@ -180,6 +180,8 @@ class BSBIM_PT_project_browser(bpy.types.Panel):
                 row = _item(layout, 1)
                 row.enabled = False
                 row.label(text=label, icon="RIGHTARROW")
+        from .pointcloud import draw_browser_section
+        draw_browser_section(layout)
         for label in ("Schedules/Quantities (all)", "Sheets (all)"):
             row = _item(layout, 0)
             row.enabled = False

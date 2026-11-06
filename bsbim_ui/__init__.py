@@ -8,7 +8,7 @@ Business logic lives in bsbim_core (vendored into the built extension by tools/b
 import bpy
 from bpy.app.handlers import persistent
 
-from . import browser, keymap, operators, palette, prefs, revit_ui, ribbon_draw, state, tools, ui
+from . import browser, keymap, operators, palette, pointcloud, prefs, revit_ui, ribbon_draw, state, tools, ui
 
 _classes = (
     prefs.BsbimPreferences,
@@ -20,6 +20,7 @@ _classes = (
     *palette.classes,
     *keymap.classes,
     *ribbon_draw.classes,
+    *pointcloud.classes,
 )
 
 
@@ -31,6 +32,7 @@ def _setup_screen():
     if not wm.windows:
         return 0.5  # try again shortly
     if wm.bsbim_revit_ui:
+        revit_ui.set_bonsai_workspace_switching(False)
         try:
             print("BS BIM:", revit_ui.setup_layout(wm.windows[0]))
         except Exception as e:  # never block Blender from starting
@@ -71,6 +73,7 @@ def _keep_bsbim_screen():
                 if window.workspace != target and window.workspace.name.startswith("BIM"):
                     window.workspace = target
                 _select_bsbim_tab(window)
+        pointcloud.watch_project_change()
     except Exception as e:  # keep the watcher alive whatever happens
         print("BS BIM screen watcher:", e)
     return 0.5
@@ -106,6 +109,7 @@ def unregister():
         bpy.app.timers.unregister(_keep_bsbim_screen)
     keymap.unregister_keymaps()
     ribbon_draw.unregister()
+    pointcloud.unregister()
     tools.unregister_draw_handler()
     revit_ui.uninstall_headers()
     bpy.types.TOPBAR_MT_editor_menus.remove(ui.draw_topbar)

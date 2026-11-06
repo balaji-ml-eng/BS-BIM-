@@ -29,6 +29,7 @@ def build(release: bool) -> Path:
     ignore = shutil.ignore_patterns("__pycache__", "*.pyc")
     shutil.copytree(ROOT / "bsbim_ui", stage, ignore=ignore)
     shutil.copytree(ROOT / "src" / "bsbim_core", stage / "bsbim_core", ignore=ignore)
+    shutil.copytree(ROOT / "src" / "bsbim_pointcloud", stage / "bsbim_pointcloud", ignore=ignore)
     if not release:
         python = ROOT / ".venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
         (stage / "_dev_paths.json").write_text(

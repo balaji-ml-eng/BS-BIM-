@@ -14,6 +14,8 @@ BS BIM itself is licensed **GPL-3.0-or-later** (see `LICENSE`). All BS BIM code 
 | rvt (rvt-rs) | 0.15.0 | Apache-2.0 | RVT Bridge backend | Yes, in the separate bridge | GPL-3 compatible. Keep its `NOTICE` file. Clean-room reader, not affiliated with Autodesk |
 | RvtIO CLI (planned) | 0.2.0 | MIT (deps: OpenMcdf MPL-2.0, SharpZipLib MIT) | RVT Bridge backend, separate process | Yes, as a separate program | MPL-2.0 is file-level copyleft: ship OpenMcdf unmodified with its notice |
 | AISC shape dimensions (`src/bsbim_core/data/us_steel.json`) | from Bonsai 0.9 "IFC4 US Steel" library | Part of Bonsai (GPL-3.0-or-later). Dimensions are public AISC data | Steel profiles in US template | Yes | Regenerate with `tools/extract_us_steel.py` |
+| pye57 | 0.4.19 | MIT (bundles libE57Format BSL-1.0, Xerces-C Apache-2.0) | E57 reader in the point cloud converter (separate process) | Yes, in the converter | Keep the bundled notices |
+| laspy + lazrs | 2.7.0 / 0.8.2 | BSD-2-Clause / MIT | LAS/LAZ reader in the point cloud converter | Yes, in the converter | |
 | pytest | 9.x | MIT | Tests only | No | |
 
 ## Rules

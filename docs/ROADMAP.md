@@ -54,7 +54,14 @@ Business model: **Option A**, open-source GPL product. Revenue comes from suppor
 - [x] Click tools: Column (CL), Beam (BM, with preview line), Brace, Level (LL), Grid (GR, labelled 1-2-3 / A-B-C), snapping to grid intersections and columns
 - [x] Revit mouse (middle pan, Shift+middle orbit, zoom at cursor, Ctrl/Shift select) and two-letter shortcuts (CL, BM, GR, LL, MV, RO, CO, DE, HH, HI, HR, ZF...)
 - [x] Visual GUI test (tools/ui_screenshot.py) compared with Revit 2027 screenshots
+- [x] Point clouds (Insert > Point Cloud): E57, LAS/LAZ, PLY, PTS, XYZ via a separate converter; GPU display with real colours,
+      thinned to 3M points; link stored in the IFC and restored on reopen; Project Browser show/hide/remove;
+      ReCap .rcp/.rcs refused with advice (no open-source reader). Tested on Union Station (6.4M points, E57)
+- [x] Real interaction test with simulated mouse/keyboard (tools/ui_interaction_test.py): 18 checks pass
+- [x] Revit-style click selection (tolerant pick, smallest element wins), immediate Delete, own pan/orbit
+- [x] BS BIM screen saved as Blender's start-up layout; Bonsai no longer switches workspaces in Revit mode
 - [ ] Hide Blender's leftover sidebar tabs (Item/Tool/View) and select-mode buttons
+- [ ] Open a Revit file together with its linked point cloud automatically (needs the link path from the RVT)
 - [ ] Interactive (mouse) testing of the click tools by a person
 - [ ] Grids with Revit bubbles (1, 2, 3 / A, B, C), place columns "At Grids"
 - [ ] Floors, walls, isolated and wall foundations, braces

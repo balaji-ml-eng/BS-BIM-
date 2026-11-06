@@ -91,6 +91,8 @@ TABS: dict[str, list[tuple[str, list[Cmd]]]] = {
             Cmd("Open Revit File", "FILE_3D", "bsbim.import_rvt"),
             Cmd("Open IFC", "FILE_FOLDER", "bim.load_project"),
         ]),
+        ("Point Cloud", [Cmd("Point Cloud", "OUTLINER_OB_POINTCLOUD", "bsbim.link_point_cloud",
+                             tip="Link a laser scan (E57, LAS, LAZ, PLY, PTS, XYZ)")]),
         ("Load from Library", [Cmd("Load Family", "ASSET_MANAGER")]),
     ],
     "ANNOTATE": [
@@ -130,7 +132,7 @@ MODIFY: list[tuple[str, list[Cmd]]] = [
         Cmd("Mirror", "MOD_MIRROR"),
         Cmd("Array", "MOD_ARRAY"),
         Cmd("Align", "ALIGN_LEFT"),
-        Cmd("Delete", "TRASH", "bim.override_object_delete"),
+        Cmd("Delete", "TRASH", "bsbim.delete_elements"),
     ]),
 ]
 

@@ -99,6 +99,12 @@ def _status(context, text: str | None):
         context.area.header_text_set(None)
 
 
+def _deselect_all(context):
+    for obj in context.selected_objects:
+        obj.select_set(False)
+    context.view_layer.objects.active = None
+
+
 def _pick_type(ifc_class: str, preferred_id: int):
     f = structure.ifc_file()
     if preferred_id:
@@ -160,6 +166,7 @@ class BSBIM_OT_place_column(bpy.types.Operator):
             try:
                 structure.place_column(self.column_type, point.x, point.y, self.level)
                 self.placed += 1
+                _deselect_all(context)  # Revit does not leave new elements selected
             except (ValueError, RuntimeError) as e:
                 self.report({"ERROR"}, str(e))
                 return self._finish(context)
@@ -261,6 +268,7 @@ class BSBIM_OT_place_beam(bpy.types.Operator):
                 try:
                     structure.place_beam(self.beam_type, self.start.to_2d(), point.to_2d(), self.level)
                     self.placed += 1
+                    _deselect_all(context)  # Revit does not leave new elements selected
                 except (ValueError, RuntimeError) as e:
                     self.report({"WARNING"}, str(e))
                 self.start = None

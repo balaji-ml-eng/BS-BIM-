@@ -186,6 +186,10 @@ def _icon_shapes(name: str):
         "Array": [*box(0.05, 0.35, 0.30, 0.65, DARK), *box(0.375, 0.35, 0.625, 0.65, DARK), *box(0.70, 0.35, 0.95, 0.65, DARK)],
         "Align": [(L, [(0.15, 0.05), (0.15, 0.95)], BLUE), *box(0.15, 0.60, 0.80, 0.80, DARK), *box(0.15, 0.20, 0.60, 0.40, DARK)],
         "Delete": [(L, [(0.20, 0.20), (0.80, 0.80)], RED), (L, [(0.20, 0.80), (0.80, 0.20)], RED)],
+        "Point Cloud": [(F, [(x, y), (x + 0.05, y), (x + 0.05, y + 0.05), (x, y), (x + 0.05, y + 0.05), (x, y + 0.05)], c)
+                        for x, y, c in ((0.15, 0.20, BLUE), (0.30, 0.45, GREEN), (0.45, 0.30, RED), (0.60, 0.60, BLUE),
+                                        (0.75, 0.35, GREEN), (0.25, 0.70, RED), (0.50, 0.80, DARK), (0.80, 0.75, BLUE),
+                                        (0.40, 0.15, DARK), (0.65, 0.15, BLUE), (0.85, 0.55, RED), (0.10, 0.50, DARK))],
         "Blender Mode": [*circle(0.50, 0.50, 0.30, (0.92, 0.47, 0.16, 1)), *circle(0.50, 0.50, 0.12, BLUE)],
     }
     icons["Wall Foundation"] = icons["Slab"]
@@ -294,14 +298,9 @@ class BSBIM_OT_ribbon_click(bpy.types.Operator):
         if not c.op:
             self.report({"INFO"}, f"{c.label}: coming in a later BS BIM version")
             return {"FINISHED"}
-        area, region = main_view3d(context)
-        module, name = c.op.split(".")
-        op = getattr(getattr(bpy.ops, module), name)
-        try:
-            with context.temp_override(area=area, region=region):
-                op("INVOKE_DEFAULT", **c.kwargs)
-        except RuntimeError as e:
-            self.report({"WARNING"}, f"{c.label}: {e}")
+        from .keymap import run_command
+        if not run_command(context, c.op, c.kwargs, c.label):
+            self.report({"WARNING"}, f"{c.label} could not start here")
         return {"FINISHED"}
 
 
@@ -333,6 +332,15 @@ class BSBIM_OT_ribbon_modify(bpy.types.Operator):
         return {"FINISHED"}
 
 
+@bpy.app.handlers.persistent
+def redraw_ribbon(*_args):
+    """Selection changes switch the ribbon to the Modify tab, so redraw it."""
+    for window in bpy.context.window_manager.windows:
+        for area in window.screen.areas:
+            if area.type == "TEXT_EDITOR":
+                area.tag_redraw()
+
+
 classes = (BSBIM_OT_ribbon_click, BSBIM_OT_ribbon_hover, BSBIM_OT_ribbon_modify)
 
 _handle = None
@@ -342,6 +350,7 @@ _keymaps: list = []
 def register():
     global _handle
     _handle = bpy.types.SpaceTextEditor.draw_handler_add(draw_ribbon, (), "WINDOW", "POST_PIXEL")
+    bpy.app.handlers.depsgraph_update_post.append(redraw_ribbon)
     kc = bpy.context.window_manager.keyconfigs.addon
     if kc is not None:
         km = kc.keymaps.new(name="Text", space_type="TEXT_EDITOR")
@@ -351,6 +360,8 @@ def register():
 
 def unregister():
     global _handle
+    if redraw_ribbon in bpy.app.handlers.depsgraph_update_post:
+        bpy.app.handlers.depsgraph_update_post.remove(redraw_ribbon)
     if _handle is not None:
         bpy.types.SpaceTextEditor.draw_handler_remove(_handle, "WINDOW")
         _handle = None
