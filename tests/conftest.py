@@ -42,7 +42,12 @@ class FakeBackend:
         return True, "fake 1.0"
 
     def read_info(self, path: Path, redact: bool = False):
-        return {"revit_version": 2024, "title": path.stem, "username": None if redact else "someone"}
+        # Like rvt-rs 0.15: redact=True clears username but still returns paths containing user names.
+        return {
+            "revit_version": 2024, "title": path.stem, "username": None if redact else "someone",
+            "last_save_path": r"D:\Users\someone\project.rvt",
+            "properties": [{"key": "Last Save Path", "value": r"D:\Users\someone"}, {"key": "Locale", "value": "ENU"}],
+        }
 
     def convert(self, path: Path, mode: str = "auto", allow_partial: bool = False):
         attempts = []

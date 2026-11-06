@@ -19,7 +19,10 @@ def test_convert_writes_ifc_and_report(fake_backend, rvt_file, tmp_path):
     assert r.ifc_path == rvt_file.with_name("House.bsbim.ifc") and r.ifc_path.is_file()
     assert (r.backend, r.mode_used) == ("fake", "geometry")
     assert r.report.total_elements == 3
-    assert r.revit_info["username"] is None  # bridge always redacts personal info in reports
+    # bridge always redacts personal info in reports, even what the backend leaves in
+    assert r.revit_info["username"] is None and r.revit_info["last_save_path"] is None
+    assert r.revit_info["properties"] == [{"key": "Locale", "value": "ENU"}]
+    assert "someone" not in report_path.read_text()
     data = json.loads(report_path.read_text())
     assert data["report"]["score"] == r.report.score
     assert data["warnings"] == ["test warning"]

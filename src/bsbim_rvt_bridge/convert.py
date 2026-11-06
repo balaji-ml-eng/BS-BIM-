@@ -58,8 +58,27 @@ def default_output(source: Path) -> Path:
     return source.with_name(source.stem + ".bsbim.ifc")
 
 
+# Fields that can reveal people or machine folders (user names often appear inside paths).
+PRIVATE_KEYS = {"username", "last_save_path", "central_model_path", "original_path"}
+_PRIVATE_WORDS = ("path", "user", "author", "machine", "computer")
+
+
+def redact_info(data: dict[str, Any]) -> dict[str, Any]:
+    """Copy of Revit file info without user names or file system paths. Backends' own
+    redaction is not trusted alone: rvt-rs 0.15 keeps last_save_path, which holds user folder names."""
+    clean = {k: (None if k in PRIVATE_KEYS else v) for k, v in data.items()}
+    props = clean.get("properties")
+    if isinstance(props, list):
+        clean["properties"] = [
+            p for p in props
+            if not (isinstance(p, dict) and any(w in str(p.get("key", "")).lower() for w in _PRIVATE_WORDS))
+        ]
+    return clean
+
+
 def info(path: str | Path, backend: str | None = None, redact: bool = False) -> dict[str, Any]:
-    return pick(backend).read_info(check_input(path), redact=redact)
+    data = pick(backend).read_info(check_input(path), redact=redact)
+    return redact_info(data) if redact else data
 
 
 def convert(
@@ -76,7 +95,7 @@ def convert(
 
     start = time.perf_counter()
     try:
-        revit_info = b.read_info(source, redact=True)
+        revit_info = redact_info(b.read_info(source, redact=True))
     except BackendError as e:
         revit_info = {"error": str(e)}
     result = b.convert(source, mode=mode, allow_partial=allow_partial)
